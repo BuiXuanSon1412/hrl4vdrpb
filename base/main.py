@@ -1,10 +1,11 @@
 import torch
 import numpy as np
 from typing import Dict, Tuple
+import os
 
 
 from problem import CustomerType
-from enviroment import VehicleDroneRoutingEnv
+from environment import VehicleDroneRoutingEnv
 from agent import HierarchicalAgent
 
 
@@ -18,7 +19,7 @@ def train_hrl_agent(
     Main training loop for HRL agent
     """
     # Create environment and agent
-    env = VehicleDroneRoutingEnv(num_customers=20, num_vehicles=3, num_drones=2)
+    env = VehicleDroneRoutingEnv(num_customers=100, num_vehicles=7, num_drones=7)
 
     agent = HierarchicalAgent(env)
 
@@ -96,11 +97,6 @@ def train_hrl_agent(
         "costs": episode_costs,
         "satisfactions": episode_satisfactions,
     }
-
-
-# ============================================================================
-# Evaluation and Visualization
-# ============================================================================
 
 
 def evaluate_agent(
@@ -243,14 +239,14 @@ def visualize_solution(agent: HierarchicalAgent):
     )
 
     plt.tight_layout()
-    plt.savefig("hrl_solution_visualization.png", dpi=150, bbox_inches="tight")
+    img_path = os.path.join(
+        os.path.dirname(__file__), "..", "img", "hrl_solution_visualization.png"
+    )
+    plt.savefig(os.path.abspath(img_path), dpi=150, bbox_inches="tight")
+
     print("Visualization saved to 'hrl_solution_visualization.png'")
     plt.show()
 
-
-# ============================================================================
-# Main Execution
-# ============================================================================
 
 if __name__ == "__main__":
     # Set random seeds for reproducibility

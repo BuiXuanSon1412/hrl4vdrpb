@@ -3,7 +3,7 @@ import numpy as np
 import torch.nn.functional as F
 from typing import Dict, List, Tuple, Optional
 
-from enviroment import VehicleDroneRoutingEnv
+from environment import VehicleDroneRoutingEnv
 from module import HighLevelPolicy, LowLevelPolicy
 
 
