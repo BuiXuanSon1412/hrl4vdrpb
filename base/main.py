@@ -16,7 +16,7 @@ def train_hrl_agent(
     save_path: str = "hrl_checkpoint.pt",
 ):
     """
-    Main training loop for HRL agent
+    Main training loop with improved monitoring
     """
     # Create environment and agent
     env = VehicleDroneRoutingEnv(num_customers=100, num_vehicles=7, num_drones=7)
@@ -27,6 +27,7 @@ def train_hrl_agent(
     episode_rewards = []
     episode_costs = []
     episode_satisfactions = []
+    service_rates = []
 
     print("Starting HRL Training...")
     print(
@@ -41,19 +42,25 @@ def train_hrl_agent(
         episode_rewards.append(result["total_reward"])
         episode_costs.append(result["total_cost"])
         episode_satisfactions.append(result["total_satisfaction"])
+        service_rates.append(result["service_rate"])
+
+        # Update exploration parameters
+        agent.update_exploration(episode, num_episodes)
 
         # Train policies
-        if episode > 0 and episode % 5 == 0:  # Train every 5 episodes
+        if episode > 0 and episode % 5 == 0:
             losses = agent.train_step(batch_size)
 
-            if losses:
+            if losses and episode % 10 == 0:
                 print(
-                    f"Episode {episode}: "
+                    f"Ep {episode}: "
+                    f"Served={result['customers_served']}/{env.num_customers} "
+                    f"({result['service_rate'] * 100:.1f}%), "
                     f"Reward={result['total_reward']:.2f}, "
                     f"Cost={result['total_cost']:.2f}, "
-                    f"Satisfaction={result['total_satisfaction']:.2f}, "
-                    f"HL_Loss={losses.get('high_level_loss', 0):.4f}, "
-                    f"LL_Loss={losses.get('low_level_loss', 0):.4f}"
+                    f"Sat={result['total_satisfaction']:.2f}, "
+                    f"ε={agent.epsilon:.3f}, "
+                    f"T={agent.temperature:.2f}"
                 )
 
         # Periodic evaluation
@@ -66,13 +73,18 @@ def train_hrl_agent(
             eval_rewards = []
             eval_costs = []
             eval_satisfactions = []
+            eval_service_rates = []
 
             for _ in range(10):
                 eval_result = agent.generate_solution(training=False)
                 eval_rewards.append(eval_result["total_reward"])
                 eval_costs.append(eval_result["total_cost"])
                 eval_satisfactions.append(eval_result["total_satisfaction"])
+                eval_service_rates.append(eval_result["service_rate"])
 
+            print(
+                f"Avg Service Rate: {np.mean(eval_service_rates) * 100:.1f}% ± {np.std(eval_service_rates) * 100:.1f}%"
+            )
             print(
                 f"Avg Reward: {np.mean(eval_rewards):.2f} ± {np.std(eval_rewards):.2f}"
             )
@@ -80,22 +92,48 @@ def train_hrl_agent(
             print(
                 f"Avg Satisfaction: {np.mean(eval_satisfactions):.2f} ± {np.std(eval_satisfactions):.2f}"
             )
+
+            # Check if service rate is improving
+            if np.mean(eval_service_rates) < 0.9:
+                print(
+                    f"⚠️  WARNING: Low service rate ({np.mean(eval_service_rates) * 100:.1f}%)"
+                )
+            else:
+                print(f"✓ Good service rate!")
+
             print("=" * 80 + "\n")
 
             # Save checkpoint
             agent.save(save_path)
             print(f"Model saved to {save_path}\n")
 
-        # Clear buffers periodically to prevent memory overflow
+        # Clear buffers periodically
         if episode > 0 and episode % 100 == 0:
             agent.clear_buffers()
 
+            # Print training progress summary
+            recent_service_rates = service_rates[-100:]
+            print(
+                f"\n📊 Last 100 episodes avg service rate: {np.mean(recent_service_rates) * 100:.1f}%"
+            )
+
     print("\nTraining completed!")
+
+    # Final statistics
+    print("\n" + "=" * 80)
+    print("TRAINING SUMMARY")
+    print("=" * 80)
+    print(
+        f"Final avg service rate (last 100 eps): {np.mean(service_rates[-100:]) * 100:.1f}%"
+    )
+    print(f"Best service rate achieved: {max(service_rates) * 100:.1f}%")
+    print(f"Episodes with 100% service: {sum(1 for sr in service_rates if sr >= 1.0)}")
 
     return agent, {
         "rewards": episode_rewards,
         "costs": episode_costs,
         "satisfactions": episode_satisfactions,
+        "service_rates": service_rates,
     }
 
 
@@ -109,8 +147,8 @@ def evaluate_agent(
         "rewards": [],
         "costs": [],
         "satisfactions": [],
-        "avg_time_deviation": [],
-        "served_customers": [],
+        "service_rates": [],
+        "customers_served": [],
     }
 
     for _ in range(num_episodes):
@@ -119,7 +157,8 @@ def evaluate_agent(
         results["rewards"].append(result["total_reward"])
         results["costs"].append(result["total_cost"])
         results["satisfactions"].append(result["total_satisfaction"])
-        results["served_customers"].append(len(agent.env.served_customers))
+        results["service_rates"].append(result["service_rate"])
+        results["customers_served"].append(result["customers_served"])
 
     # Compute statistics
     stats = {
@@ -129,7 +168,9 @@ def evaluate_agent(
         "std_cost": np.std(results["costs"]),
         "mean_satisfaction": np.mean(results["satisfactions"]),
         "std_satisfaction": np.std(results["satisfactions"]),
-        "avg_served": np.mean(results["served_customers"]),
+        "mean_service_rate": np.mean(results["service_rates"]),
+        "std_service_rate": np.std(results["service_rates"]),
+        "avg_served": np.mean(results["customers_served"]),
     }
 
     return stats, results
@@ -171,13 +212,22 @@ def visualize_solution(agent: HierarchicalAgent):
 
     # Plot customers
     for customer in agent.env.customers:
-        color = "blue" if customer.customer_type == CustomerType.LINEHAUL else "green"
-        marker = "o" if customer.customer_type == CustomerType.LINEHAUL else "^"
+        if customer.id in agent.env.served_customers:
+            # Served customers
+            color = (
+                "blue" if customer.customer_type == CustomerType.LINEHAUL else "green"
+            )
+            marker = "o" if customer.customer_type == CustomerType.LINEHAUL else "^"
+        else:
+            # Unserved customers (in red)
+            color = "red"
+            marker = "x"
+
         ax1.scatter(customer.x, customer.y, c=color, s=100, marker=marker, zorder=3)
         ax1.text(customer.x + 2, customer.y + 2, f"{customer.id}", fontsize=8)
 
     # Plot vehicle routes
-    colors_vehicles = ["purple", "orange", "brown"]
+    colors_vehicles = ["purple", "orange", "brown", "pink", "cyan", "magenta", "yellow"]
     for i, vehicle in enumerate(agent.env.vehicles):
         if len(vehicle.route) > 0:
             route_x = [agent.env.depot[0]]
@@ -201,25 +251,31 @@ def visualize_solution(agent: HierarchicalAgent):
             )
 
     # Create legend
-    linehaul_patch = mpatches.Patch(color="blue", label="Linehaul")
-    backhaul_patch = mpatches.Patch(color="green", label="Backhaul")
-    ax1.legend(handles=[linehaul_patch, backhaul_patch], loc="upper right")
+    linehaul_patch = mpatches.Patch(color="blue", label="Linehaul (Served)")
+    backhaul_patch = mpatches.Patch(color="green", label="Backhaul (Served)")
+    unserved_patch = mpatches.Patch(color="red", label="Unserved")
+    ax1.legend(
+        handles=[linehaul_patch, backhaul_patch, unserved_patch], loc="upper right"
+    )
     ax1.grid(True, alpha=0.3)
 
     # Plot 2: Metrics
     ax2.set_title("Solution Metrics", fontsize=14, fontweight="bold")
     ax2.axis("off")
 
+    service_rate = result["service_rate"] * 100
+
     metrics_text = f"""
     SOLUTION QUALITY
     {"=" * 40}
     
+    Service Rate: {service_rate:.1f}%
+    Customers Served: {result["customers_served"]} / {agent.env.num_customers}
+    
     Total Reward: {result["total_reward"]:.2f}
     Total Cost: {result["total_cost"]:.2f}
     Total Satisfaction: {result["total_satisfaction"]:.2f}
-    Avg Satisfaction: {result["total_satisfaction"] / agent.env.num_customers:.3f}
-    
-    Customers Served: {len(agent.env.served_customers)} / {agent.env.num_customers}
+    Avg Satisfaction: {result["total_satisfaction"] / max(1, result["customers_served"]):.3f}
     
     VEHICLE UTILIZATION
     {"=" * 40}
@@ -242,6 +298,7 @@ def visualize_solution(agent: HierarchicalAgent):
     img_path = os.path.join(
         os.path.dirname(__file__), "..", "img", "hrl_solution_visualization.png"
     )
+    os.makedirs(os.path.dirname(img_path), exist_ok=True)
     plt.savefig(os.path.abspath(img_path), dpi=150, bbox_inches="tight")
 
     print("Visualization saved to 'hrl_solution_visualization.png'")
@@ -274,6 +331,9 @@ if __name__ == "__main__":
     stats, results = evaluate_agent(agent, num_episodes=100)
 
     print("\nFinal Performance Statistics:")
+    print(
+        f"  Service Rate: {stats['mean_service_rate'] * 100:.1f}% ± {stats['std_service_rate'] * 100:.1f}%"
+    )
     print(f"  Mean Reward: {stats['mean_reward']:.2f} ± {stats['std_reward']:.2f}")
     print(f"  Mean Cost: {stats['mean_cost']:.2f} ± {stats['std_cost']:.2f}")
     print(

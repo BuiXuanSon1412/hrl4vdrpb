@@ -2,7 +2,7 @@ import gymnasium as gym
 from gymnasium import spaces
 
 import numpy as np
-from typing import List, Dict, Tuple
+from typing import List, Dict, Tuple, Optional
 
 from problem import Customer, Vehicle, Drone, CustomerType
 
@@ -41,35 +41,37 @@ class VehicleDroneRoutingEnv(gym.Env):
         self.drones: List[Drone] = []
         self.served_customers = set()
 
+        # Track drone missions
+        self.drone_missions: Dict[int, Dict] = {}
+
         # For tracking solution quality
         self.total_cost = 0.0
         self.total_satisfaction = 0.0
 
-        # Action and observation spaces (will be defined in reset)
-        self.action_space = spaces.Discrete(num_customers + 1)  # +1 for return to depot
+        # Action and observation spaces
+        self.action_space = spaces.Discrete(num_customers + 1)
         self.observation_space = spaces.Box(
             low=0, high=1, shape=(self._get_state_dim(),), dtype=np.float32
         )
 
     def _get_state_dim(self) -> int:
         """Calculate state dimension"""
-        customer_features = 7  # x, y, demand, tw_start, tw_end, type, served
-        vehicle_features = 6  # x, y, load, time, visited_linehaul, visited_backhaul
-        drone_features = 5  # x, y, battery, available, capacity
+        customer_features = 7
+        vehicle_features = 7
+        drone_features = 5
 
         state_dim = (
             self.num_customers * customer_features
             + self.num_vehicles * vehicle_features
             + self.num_drones * drone_features
             + 2
-        )  # depot coordinates
+        )
         return state_dim
 
     def reset(
         self, *, seed: int | None = None, options: dict | None = None
     ) -> Tuple[np.ndarray, Dict]:
         """Reset environment to initial state"""
-        # Gymnasium requires handling seed parameter
         super().reset(seed=seed)
         if seed is not None:
             np.random.seed(seed)
@@ -78,6 +80,7 @@ class VehicleDroneRoutingEnv(gym.Env):
         self.vehicles = []
         self.drones = []
         self.served_customers = set()
+        self.drone_missions = {}
         self.total_cost = 0.0
         self.total_satisfaction = 0.0
 
@@ -94,20 +97,20 @@ class VehicleDroneRoutingEnv(gym.Env):
                     id=i,
                     x=np.random.uniform(0, self.map_size),
                     y=np.random.uniform(0, self.map_size),
-                    demand=np.random.uniform(5, 20),
+                    demand=np.random.uniform(5, 15),  # Reduced max demand
                     time_window_start=np.random.uniform(0, 100),
                     time_window_end=np.random.uniform(100, 200),
                     customer_type=customer_type,
                 )
             )
 
-        # Initialize vehicles at depot
+        # Initialize vehicles at depot - FULLY LOADED
         for i in range(self.num_vehicles):
             self.vehicles.append(
                 Vehicle(
                     id=i,
                     capacity=self.vehicle_capacity,
-                    current_load=0.0,
+                    current_load=self.vehicle_capacity,
                     x=self.depot[0],
                     y=self.depot[1],
                     current_time=0.0,
@@ -125,7 +128,7 @@ class VehicleDroneRoutingEnv(gym.Env):
                     capacity=self.drone_capacity,
                     battery_capacity=self.drone_battery,
                     current_battery=self.drone_battery,
-                    speed=2.0,  # Drones are faster
+                    speed=2.0,
                     is_available=True,
                     x=self.depot[0],
                     y=self.depot[1],
@@ -147,7 +150,7 @@ class VehicleDroneRoutingEnv(gym.Env):
                 [
                     customer.x / self.map_size,
                     customer.y / self.map_size,
-                    customer.demand / 20.0,  # Normalize by max demand
+                    customer.demand / 20.0,
                     customer.time_window_start / 200.0,
                     customer.time_window_end / 200.0,
                     float(customer.customer_type.value),
@@ -165,6 +168,7 @@ class VehicleDroneRoutingEnv(gym.Env):
                     vehicle.current_time / 200.0,
                     float(vehicle.visited_linehaul),
                     float(vehicle.visited_backhaul),
+                    float(len(vehicle.route) > 0),
                 ]
             )
 
@@ -189,33 +193,16 @@ class VehicleDroneRoutingEnv(gym.Env):
     def calculate_satisfaction(
         self, arrival_time: float, tw_start: float, tw_end: float
     ) -> float:
-        """
-        Calculate satisfaction score based on time window adherence
-        Gaussian function centered on time window
-        """
-        tw_center = (tw_start + tw_end) / 2
-        tw_width = (tw_end - tw_start) / 2
-
+        """Calculate satisfaction score based on time window adherence"""
         if tw_start <= arrival_time <= tw_end:
-            # Inside time window: high satisfaction
             return 1.0
         else:
-            # Outside time window: exponential decay
             deviation = min(abs(arrival_time - tw_start), abs(arrival_time - tw_end))
+            tw_width = (tw_end - tw_start) / 2
             return np.exp(-deviation / (tw_width + 1e-6))
 
     def step(self, action: Dict) -> Tuple[np.ndarray, float, bool, bool, Dict]:
-        """
-        Execute one step in the environment
-        Action format: {
-            'vehicle_id': int,
-            'customer_id': int,
-            'use_drone': bool,
-            'drone_id': Optional[int]
-        }
-
-        Returns: observation, reward, terminated, truncated, info
-        """
+        """Execute one step in the environment"""
         vehicle_id = action["vehicle_id"]
         customer_id = action["customer_id"]
         use_drone = action.get("use_drone", False)
@@ -225,155 +212,229 @@ class VehicleDroneRoutingEnv(gym.Env):
 
         # Check if returning to depot
         if customer_id == -1:
-            distance = self.calculate_distance(
-                vehicle.x, vehicle.y, self.depot[0], self.depot[1]
-            )
-            travel_time = distance / 1.0  # Vehicle speed = 1.0
-            cost = distance
-
-            vehicle.x = self.depot[0]
-            vehicle.y = self.depot[1]
-            vehicle.current_time += travel_time
-            vehicle.current_load = 0.0
-
-            self.total_cost += cost
-            reward = -cost
-
-            # Check if all customers served
+            result = self._handle_depot_return(vehicle)
+            # Check if episode should terminate
             terminated = len(self.served_customers) == self.num_customers
-            truncated = False
+            truncated = result[3]
 
-            return (
-                self._get_state(),
-                reward,
-                terminated,
-                truncated,
-                {"cost": cost, "satisfaction": 0.0},
-            )
+            # Add penalty for unserved customers if terminating
+            reward = result[1]
+            if terminated or truncated:
+                unserved_count = self.num_customers - len(self.served_customers)
+                if unserved_count > 0:
+                    reward -= 200.0 * unserved_count  # HEAVY PENALTY
+
+            return result[0], reward, terminated, truncated, result[4]
 
         customer = self.customers[customer_id]
 
-        # Check feasibility
+        # Validate action
+        error = self._validate_action(vehicle, customer, use_drone, drone_id)
+        if error:
+            return self._get_state(), -100.0, False, False, {"error": error}
+
+        # Execute action
+        if use_drone and drone_id is not None:
+            return self._handle_drone_delivery(
+                vehicle, customer, drone_id, action.get("drone_return_location", -1)
+            )
+        else:
+            return self._handle_vehicle_delivery(vehicle, customer)
+
+    def _validate_action(
+        self,
+        vehicle: Vehicle,
+        customer: Customer,
+        use_drone: bool,
+        drone_id: Optional[int],
+    ) -> Optional[str]:
+        """Validate if action is feasible"""
+
         if customer.id in self.served_customers:
-            return (
-                self._get_state(),
-                -100.0,
-                False,
-                False,
-                {"error": "customer_already_served"},
-            )
+            return "customer_already_served"
 
-        # Check precedence constraint
-        if (
-            customer.customer_type == CustomerType.BACKHAUL
-            and not vehicle.visited_linehaul
-        ):
-            return (
-                self._get_state(),
-                -100.0,
-                False,
-                False,
-                {"error": "precedence_violation"},
-            )
+        if customer.customer_type == CustomerType.LINEHAUL:
+            if vehicle.current_load < customer.demand:
+                return "insufficient_load_for_delivery"
+        else:  # BACKHAUL
+            if not vehicle.visited_linehaul:
+                return "must_visit_linehaul_first"
+            if vehicle.current_load + customer.demand > vehicle.capacity:
+                return "capacity_exceeded_for_pickup"
 
-        # Check capacity
-        if vehicle.current_load + customer.demand > vehicle.capacity:
+        if use_drone and drone_id is not None:
+            drone = self.drones[drone_id]
+            if not drone.is_available:
+                return "drone_not_available"
+            if customer.demand > drone.capacity:
+                return "drone_capacity_exceeded"
+
+        return None
+
+    def _handle_depot_return(
+        self, vehicle: Vehicle
+    ) -> Tuple[np.ndarray, float, bool, bool, Dict]:
+        """Handle vehicle returning to depot"""
+        distance = self.calculate_distance(
+            vehicle.x, vehicle.y, self.depot[0], self.depot[1]
+        )
+        travel_time = distance / 1.0
+        cost = distance
+
+        vehicle.x = self.depot[0]
+        vehicle.y = self.depot[1]
+        vehicle.current_time += travel_time
+        vehicle.current_load = 0.0
+
+        self.total_cost += cost
+        reward = -cost
+
+        terminated = len(self.served_customers) == self.num_customers
+        truncated = False
+
+        return (
+            self._get_state(),
+            reward,
+            terminated,
+            truncated,
+            {"cost": cost, "satisfaction": 0.0},
+        )
+
+    def _handle_vehicle_delivery(
+        self, vehicle: Vehicle, customer: Customer
+    ) -> Tuple[np.ndarray, float, bool, bool, Dict]:
+        """Handle vehicle serving customer directly"""
+
+        distance = self.calculate_distance(vehicle.x, vehicle.y, customer.x, customer.y)
+        travel_time = distance / 1.0
+        cost = distance
+
+        vehicle.x = customer.x
+        vehicle.y = customer.y
+        vehicle.current_time += travel_time
+
+        # Update load based on customer type
+        if customer.customer_type == CustomerType.LINEHAUL:
+            vehicle.current_load -= customer.demand
+            vehicle.visited_linehaul = True
+        else:
+            vehicle.current_load += customer.demand
+            vehicle.visited_backhaul = True
+
+        satisfaction = self.calculate_satisfaction(
+            vehicle.current_time, customer.time_window_start, customer.time_window_end
+        )
+
+        vehicle.route.append(customer.id)
+        self.served_customers.add(customer.id)
+
+        self.total_cost += cost
+        self.total_satisfaction += satisfaction
+
+        reward = -cost + 10.0 * satisfaction
+
+        terminated = len(self.served_customers) == self.num_customers
+        truncated = False
+
+        return (
+            self._get_state(),
+            reward,
+            terminated,
+            truncated,
+            {
+                "cost": cost,
+                "satisfaction": satisfaction,
+                "arrival_time": vehicle.current_time,
+            },
+        )
+
+    def _handle_drone_delivery(
+        self,
+        vehicle: Vehicle,
+        customer: Customer,
+        drone_id: int,
+        return_location: int,
+    ) -> Tuple[np.ndarray, float, bool, bool, Dict]:
+        """Handle drone serving customer"""
+        drone = self.drones[drone_id]
+
+        launch_distance = self.calculate_distance(
+            vehicle.x, vehicle.y, customer.x, customer.y
+        )
+
+        if return_location == -1:
+            return_x, return_y = self.depot
+        else:
+            return_customer = self.customers[return_location]
+            return_x, return_y = return_customer.x, return_customer.y
+
+        return_distance = self.calculate_distance(
+            customer.x, customer.y, return_x, return_y
+        )
+
+        total_distance = launch_distance + return_distance
+
+        battery_cost = total_distance * 0.5
+        if battery_cost > drone.current_battery:
             return (
                 self._get_state(),
                 -50.0,
                 False,
                 False,
-                {"error": "capacity_exceeded"},
+                {"error": "insufficient_battery"},
             )
 
-        # Calculate travel distance and time
-        if use_drone and drone_id is not None:
-            drone = self.drones[drone_id]
-            if not drone.is_available or customer.demand > drone.capacity:
-                return (
-                    self._get_state(),
-                    -50.0,
-                    False,
-                    False,
-                    {"error": "drone_not_feasible"},
-                )
+        travel_time = total_distance / drone.speed
+        cost = total_distance * 1.5
 
-            # Drone deployment
-            distance = self.calculate_distance(
-                vehicle.x, vehicle.y, customer.x, customer.y
-            )
-            return_distance = self.calculate_distance(
-                customer.x, customer.y, vehicle.x, vehicle.y
-            )
-            total_distance = distance + return_distance
+        arrival_time = vehicle.current_time + (launch_distance / drone.speed)
 
-            battery_cost = total_distance * 0.5  # Battery consumption rate
-            if battery_cost > drone.current_battery:
-                return (
-                    self._get_state(),
-                    -50.0,
-                    False,
-                    False,
-                    {"error": "insufficient_battery"},
-                )
-
-            travel_time = total_distance / drone.speed
-            cost = total_distance * 1.5  # Drone cost factor
-
-            drone.current_battery -= battery_cost
-            drone.is_available = False
-
-        else:
-            # Vehicle serves customer
-            distance = self.calculate_distance(
-                vehicle.x, vehicle.y, customer.x, customer.y
-            )
-            travel_time = distance / 1.0  # Vehicle speed
-            cost = distance
-
-            vehicle.x = customer.x
-            vehicle.y = customer.y
-
-        # Update time and calculate satisfaction
-        arrival_time = vehicle.current_time + travel_time
         satisfaction = self.calculate_satisfaction(
             arrival_time, customer.time_window_start, customer.time_window_end
         )
 
-        # Update vehicle state
-        vehicle.current_time = arrival_time
-        vehicle.current_load += customer.demand
-        vehicle.route.append(customer_id)
+        drone.current_battery -= battery_cost
+        drone.x = return_x
+        drone.y = return_y
+
+        self.served_customers.add(customer.id)
 
         if customer.customer_type == CustomerType.LINEHAUL:
             vehicle.visited_linehaul = True
+            vehicle.current_load -= customer.demand
         else:
             vehicle.visited_backhaul = True
+            vehicle.current_load += customer.demand
 
-        # Mark customer as served
-        self.served_customers.add(customer.id)
-
-        # Update totals
         self.total_cost += cost
         self.total_satisfaction += satisfaction
 
-        # Calculate reward (multi-objective)
-        reward = -cost + 10.0 * satisfaction  # Weight satisfaction higher
+        reward = -cost + 10.0 * satisfaction
 
-        # Check if done
         terminated = len(self.served_customers) == self.num_customers
         truncated = False
 
-        info = {
-            "cost": cost,
-            "satisfaction": satisfaction,
-            "arrival_time": arrival_time,
-        }
-
-        return self._get_state(), reward, terminated, truncated, info
+        return (
+            self._get_state(),
+            reward,
+            terminated,
+            truncated,
+            {
+                "cost": cost,
+                "satisfaction": satisfaction,
+                "arrival_time": arrival_time,
+                "used_drone": True,
+            },
+        )
 
     def get_valid_actions(self, vehicle_id: int) -> List[int]:
-        """Get list of valid customer IDs for current vehicle"""
+        """
+        Get list of valid customer IDs for current vehicle
+
+        CRITICAL FIX: Only allow depot return when:
+        1. Vehicle has started a route, AND
+        2. Either no valid customers OR all customers served
+        """
         vehicle = self.vehicles[vehicle_id]
         valid = []
 
@@ -381,20 +442,19 @@ class VehicleDroneRoutingEnv(gym.Env):
             if customer.id in self.served_customers:
                 continue
 
-            # Check precedence
-            if (
-                customer.customer_type == CustomerType.BACKHAUL
-                and not vehicle.visited_linehaul
-            ):
-                continue
+            if customer.customer_type == CustomerType.LINEHAUL:
+                if vehicle.current_load >= customer.demand:
+                    valid.append(customer.id)
+            else:  # BACKHAUL
+                if not vehicle.visited_linehaul:
+                    continue
+                if vehicle.current_load + customer.demand <= vehicle.capacity:
+                    valid.append(customer.id)
 
-            # Check capacity
-            if vehicle.current_load + customer.demand > vehicle.capacity:
-                continue
-
-            valid.append(customer.id)
-
-        # Always allow return to depot
-        valid.append(-1)
+        # CRITICAL: Only allow depot return if route started AND
+        # (no valid customers OR all customers served)
+        if len(vehicle.route) > 0:
+            if len(valid) == 0 or len(self.served_customers) == self.num_customers:
+                valid.append(-1)
 
         return valid
