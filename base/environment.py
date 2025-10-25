@@ -21,6 +21,10 @@ class VehicleDroneRoutingEnv(gym.Env):
         drone_capacity: float = 10.0,
         drone_battery: float = 100.0,
         map_size: float = 100.0,
+        # NEW: Reward normalization parameters
+        normalize_rewards: bool = True,
+        cost_weight: float = 0.5,
+        satisfaction_weight: float = 0.5,
     ):
         super().__init__()
 
@@ -31,6 +35,16 @@ class VehicleDroneRoutingEnv(gym.Env):
         self.drone_capacity = drone_capacity
         self.drone_battery = drone_battery
         self.map_size = map_size
+
+        # Reward configuration
+        self.normalize_rewards = normalize_rewards
+        self.cost_weight = cost_weight
+        self.satisfaction_weight = satisfaction_weight
+
+        # Calculate normalization bounds
+        self.max_possible_cost = self._estimate_max_cost()
+        self.max_satisfaction_per_customer = 1.0
+        self.max_unserved_penalty_per_customer = 200.0
 
         # Depot location
         self.depot = (map_size / 2, map_size / 2)
@@ -54,6 +68,20 @@ class VehicleDroneRoutingEnv(gym.Env):
             low=0, high=1, shape=(self._get_state_dim(),), dtype=np.float32
         )
 
+    def _estimate_max_cost(self) -> float:
+        """
+        Estimate maximum possible cost for normalization
+        Conservative upper bound based on worst-case routing
+        """
+        # Diagonal distance of map (worst case single trip)
+        diagonal = np.sqrt(2) * self.map_size
+
+        # Worst case: each vehicle visits all customers with returns
+        # This is highly conservative but ensures we don't exceed bounds
+        max_cost = diagonal * self.num_customers * 2
+
+        return max_cost
+
     def _get_state_dim(self) -> int:
         """Calculate state dimension"""
         customer_features = 7
@@ -67,6 +95,44 @@ class VehicleDroneRoutingEnv(gym.Env):
             + 2
         )
         return state_dim
+
+    def _calculate_reward(
+        self, cost: float, satisfaction: float, unserved_penalty: float = 0.0
+    ) -> float:
+        """
+        Calculate properly normalized multi-objective reward
+
+        Args:
+            cost: Travel cost (distance)
+            satisfaction: Time window satisfaction score [0, 1]
+            unserved_penalty: Additional penalty for unserved customers
+
+        Returns:
+            Normalized reward in approximately [-1, 1] range
+        """
+        if not self.normalize_rewards:
+            # Legacy behavior for backward compatibility
+            return -cost + 10.0 * satisfaction - unserved_penalty
+
+        # Normalize cost to [0, 1] where 0 = worst (max cost), 1 = best (zero cost)
+        normalized_cost = 1.0 - min(cost / self.max_possible_cost, 1.0)
+
+        # Satisfaction already in [0, 1]
+        normalized_satisfaction = satisfaction
+
+        # Normalize unserved penalty
+        max_total_penalty = self.max_unserved_penalty_per_customer * self.num_customers
+        normalized_penalty = min(unserved_penalty / max_total_penalty, 1.0)
+
+        # Weighted combination
+        # Both objectives in [0, 1], weights sum to 1.0
+        reward = (
+            self.cost_weight * normalized_cost
+            + self.satisfaction_weight * normalized_satisfaction
+            - normalized_penalty  # Penalty reduces reward
+        )
+
+        return reward
 
     def reset(
         self, *, seed: int | None = None, options: dict | None = None
@@ -97,7 +163,7 @@ class VehicleDroneRoutingEnv(gym.Env):
                     id=i,
                     x=np.random.uniform(0, self.map_size),
                     y=np.random.uniform(0, self.map_size),
-                    demand=np.random.uniform(5, 15),  # Reduced max demand
+                    demand=np.random.uniform(5, 15),
                     time_window_start=np.random.uniform(0, 100),
                     time_window_end=np.random.uniform(100, 200),
                     customer_type=customer_type,
@@ -218,20 +284,27 @@ class VehicleDroneRoutingEnv(gym.Env):
             truncated = result[3]
 
             # Add penalty for unserved customers if terminating
-            reward = result[1]
+            state, reward, _, _, info = result
             if terminated or truncated:
                 unserved_count = self.num_customers - len(self.served_customers)
                 if unserved_count > 0:
-                    reward -= 200.0 * unserved_count  # HEAVY PENALTY
+                    unserved_penalty = (
+                        self.max_unserved_penalty_per_customer * unserved_count
+                    )
+                    # Recalculate reward with penalty
+                    reward = self._calculate_reward(info["cost"], 0.0, unserved_penalty)
 
-            return result[0], reward, terminated, truncated, result[4]
+            return state, reward, terminated, truncated, info
 
         customer = self.customers[customer_id]
 
         # Validate action
         error = self._validate_action(vehicle, customer, use_drone, drone_id)
         if error:
-            return self._get_state(), -100.0, False, False, {"error": error}
+            # Invalid action penalty
+            invalid_penalty = 100.0
+            reward = self._calculate_reward(0.0, 0.0, invalid_penalty)
+            return self._get_state(), reward, False, False, {"error": error}
 
         # Execute action
         if use_drone and drone_id is not None:
@@ -287,7 +360,9 @@ class VehicleDroneRoutingEnv(gym.Env):
         vehicle.current_load = 0.0
 
         self.total_cost += cost
-        reward = -cost
+
+        # Use normalized reward calculation
+        reward = self._calculate_reward(cost, 0.0, 0.0)
 
         terminated = len(self.served_customers) == self.num_customers
         truncated = False
@@ -331,7 +406,8 @@ class VehicleDroneRoutingEnv(gym.Env):
         self.total_cost += cost
         self.total_satisfaction += satisfaction
 
-        reward = -cost + 10.0 * satisfaction
+        # Use normalized reward calculation
+        reward = self._calculate_reward(cost, satisfaction, 0.0)
 
         terminated = len(self.served_customers) == self.num_customers
         truncated = False
@@ -376,9 +452,12 @@ class VehicleDroneRoutingEnv(gym.Env):
 
         battery_cost = total_distance * 0.5
         if battery_cost > drone.current_battery:
+            # Battery insufficient penalty
+            battery_penalty = 50.0
+            reward = self._calculate_reward(0.0, 0.0, battery_penalty)
             return (
                 self._get_state(),
-                -50.0,
+                reward,
                 False,
                 False,
                 {"error": "insufficient_battery"},
@@ -409,7 +488,8 @@ class VehicleDroneRoutingEnv(gym.Env):
         self.total_cost += cost
         self.total_satisfaction += satisfaction
 
-        reward = -cost + 10.0 * satisfaction
+        # Use normalized reward calculation
+        reward = self._calculate_reward(cost, satisfaction, 0.0)
 
         terminated = len(self.served_customers) == self.num_customers
         truncated = False

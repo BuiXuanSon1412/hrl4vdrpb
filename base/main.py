@@ -14,12 +14,23 @@ def train_hrl_agent(
     batch_size: int = 32,
     eval_interval: int = 50,
     save_path: str = "hrl_checkpoint.pt",
+    # NEW: Reward normalization parameters
+    normalize_rewards: bool = True,
+    cost_weight: float = 0.5,
+    satisfaction_weight: float = 0.5,
 ):
     """
-    Main training loop with improved monitoring
+    Main training loop with improved monitoring and normalized rewards
     """
-    # Create environment and agent
-    env = VehicleDroneRoutingEnv(num_customers=100, num_vehicles=7, num_drones=7)
+    # Create environment with normalized rewards
+    env = VehicleDroneRoutingEnv(
+        num_customers=100,
+        num_vehicles=7,
+        num_drones=7,
+        normalize_rewards=normalize_rewards,
+        cost_weight=cost_weight,
+        satisfaction_weight=satisfaction_weight,
+    )
 
     agent = HierarchicalAgent(env)
 
@@ -33,6 +44,11 @@ def train_hrl_agent(
     print(
         f"Environment: {env.num_customers} customers, {env.num_vehicles} vehicles, {env.num_drones} drones"
     )
+    print(f"Reward Normalization: {normalize_rewards}")
+    if normalize_rewards:
+        print(f"  Cost Weight: {cost_weight:.2f}")
+        print(f"  Satisfaction Weight: {satisfaction_weight:.2f}")
+        print(f"  Max Possible Cost: {env.max_possible_cost:.2f}")
     print("=" * 80)
 
     for episode in range(num_episodes):
@@ -135,6 +151,85 @@ def train_hrl_agent(
         "satisfactions": episode_satisfactions,
         "service_rates": service_rates,
     }
+
+
+def train_pareto_front(num_episodes: int = 500, batch_size: int = 32):
+    """
+    Train multiple agents with different cost/satisfaction weights
+    to explore the Pareto front
+    """
+    weight_configs = [
+        {"cost_weight": 0.9, "satisfaction_weight": 0.1, "name": "Cost-Prioritized"},
+        {"cost_weight": 0.7, "satisfaction_weight": 0.3, "name": "Cost-Focused"},
+        {"cost_weight": 0.5, "satisfaction_weight": 0.5, "name": "Balanced"},
+        {
+            "cost_weight": 0.3,
+            "satisfaction_weight": 0.7,
+            "name": "Satisfaction-Focused",
+        },
+        {
+            "cost_weight": 0.1,
+            "satisfaction_weight": 0.9,
+            "name": "Satisfaction-Prioritized",
+        },
+    ]
+
+    results = []
+
+    print("=" * 80)
+    print("PARETO FRONT EXPLORATION")
+    print("=" * 80)
+
+    for config in weight_configs:
+        print(f"\n{'=' * 80}")
+        print(f"Training: {config['name']}")
+        print(
+            f"Cost Weight: {config['cost_weight']:.1f}, Satisfaction Weight: {config['satisfaction_weight']:.1f}"
+        )
+        print(f"{'=' * 80}\n")
+
+        agent, history = train_hrl_agent(
+            num_episodes=num_episodes,
+            batch_size=batch_size,
+            eval_interval=100,
+            save_path=f"pareto_{config['name'].lower().replace('-', '_')}.pt",
+            normalize_rewards=True,
+            cost_weight=config["cost_weight"],
+            satisfaction_weight=config["satisfaction_weight"],
+        )
+
+        # Final evaluation
+        stats, _ = evaluate_agent(agent, num_episodes=50)
+
+        results.append(
+            {
+                "name": config["name"],
+                "weights": (config["cost_weight"], config["satisfaction_weight"]),
+                "mean_cost": stats["mean_cost"],
+                "mean_satisfaction": stats["mean_satisfaction"],
+                "mean_service_rate": stats["mean_service_rate"],
+            }
+        )
+
+    # Print Pareto front summary
+    print("\n" + "=" * 80)
+    print("PARETO FRONT SUMMARY")
+    print("=" * 80)
+    print(
+        f"{'Configuration':<30} {'Cost Weight':<12} {'Sat Weight':<12} {'Avg Cost':<12} {'Avg Sat':<12} {'Service %':<10}"
+    )
+    print("-" * 80)
+    for result in results:
+        print(
+            f"{result['name']:<30} "
+            f"{result['weights'][0]:<12.2f} "
+            f"{result['weights'][1]:<12.2f} "
+            f"{result['mean_cost']:<12.2f} "
+            f"{result['mean_satisfaction']:<12.2f} "
+            f"{result['mean_service_rate'] * 100:<10.1f}"
+        )
+
+    return results
 
 
 def evaluate_agent(
@@ -277,6 +372,12 @@ def visualize_solution(agent: HierarchicalAgent):
     Total Satisfaction: {result["total_satisfaction"]:.2f}
     Avg Satisfaction: {result["total_satisfaction"] / max(1, result["customers_served"]):.3f}
     
+    REWARD CONFIGURATION
+    {"=" * 40}
+    Normalized: {agent.env.normalize_rewards}
+    Cost Weight: {agent.env.cost_weight:.2f}
+    Satisfaction Weight: {agent.env.satisfaction_weight:.2f}
+    
     VEHICLE UTILIZATION
     {"=" * 40}
     """
@@ -312,40 +413,52 @@ if __name__ == "__main__":
 
     print("=" * 80)
     print("HIERARCHICAL RL FOR VEHICLE-DRONE ROUTING WITH BACKHAULS")
+    print("WITH NORMALIZED MULTI-OBJECTIVE REWARDS")
     print("=" * 80)
     print()
 
-    # Train agent
-    agent, training_history = train_hrl_agent(
-        num_episodes=500,
-        batch_size=32,
-        eval_interval=50,
-        save_path="hrl_vdrpb_checkpoint.pt",
-    )
+    # Choose training mode
+    mode = "single"  # Options: "single" or "pareto"
 
-    print("\n" + "=" * 80)
-    print("FINAL EVALUATION")
-    print("=" * 80)
+    if mode == "single":
+        # Train single agent with balanced weights
+        agent, training_history = train_hrl_agent(
+            num_episodes=500,
+            batch_size=32,
+            eval_interval=50,
+            save_path="hrl_vdrpb_checkpoint.pt",
+            normalize_rewards=True,
+            cost_weight=0.5,
+            satisfaction_weight=0.5,
+        )
 
-    # Final evaluation
-    stats, results = evaluate_agent(agent, num_episodes=100)
+        print("\n" + "=" * 80)
+        print("FINAL EVALUATION")
+        print("=" * 80)
 
-    print("\nFinal Performance Statistics:")
-    print(
-        f"  Service Rate: {stats['mean_service_rate'] * 100:.1f}% ± {stats['std_service_rate'] * 100:.1f}%"
-    )
-    print(f"  Mean Reward: {stats['mean_reward']:.2f} ± {stats['std_reward']:.2f}")
-    print(f"  Mean Cost: {stats['mean_cost']:.2f} ± {stats['std_cost']:.2f}")
-    print(
-        f"  Mean Satisfaction: {stats['mean_satisfaction']:.2f} ± {stats['std_satisfaction']:.2f}"
-    )
-    print(
-        f"  Avg Customers Served: {stats['avg_served']:.1f} / {agent.env.num_customers}"
-    )
+        # Final evaluation
+        stats, results = evaluate_agent(agent, num_episodes=100)
 
-    # Visualize a solution
-    print("\nGenerating visualization...")
-    visualize_solution(agent)
+        print("\nFinal Performance Statistics:")
+        print(
+            f"  Service Rate: {stats['mean_service_rate'] * 100:.1f}% ± {stats['std_service_rate'] * 100:.1f}%"
+        )
+        print(f"  Mean Reward: {stats['mean_reward']:.2f} ± {stats['std_reward']:.2f}")
+        print(f"  Mean Cost: {stats['mean_cost']:.2f} ± {stats['std_cost']:.2f}")
+        print(
+            f"  Mean Satisfaction: {stats['mean_satisfaction']:.2f} ± {stats['std_satisfaction']:.2f}"
+        )
+        print(
+            f"  Avg Customers Served: {stats['avg_served']:.1f} / {agent.env.num_customers}"
+        )
+
+        # Visualize a solution
+        print("\nGenerating visualization...")
+        visualize_solution(agent)
+
+    elif mode == "pareto":
+        # Explore Pareto front with different weight configurations
+        pareto_results = train_pareto_front(num_episodes=500, batch_size=32)
 
     print("\n" + "=" * 80)
     print("TRAINING COMPLETE!")
