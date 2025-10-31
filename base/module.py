@@ -366,7 +366,7 @@ class LowLevelPolicy(nn.Module):
             self.Wv(customer_encoded), head_num=self.head_num
         )  # (batch, head_num, num_customers, qkv_dim)
 
-        # Create ninf_mask for attention - FIX: expand to 3D
+        # Create ninf_mask for attention
         ninf_mask = None
         if mask is not None:
             # Expand mask from (batch, num_customers) to (batch, 1, num_customers)
