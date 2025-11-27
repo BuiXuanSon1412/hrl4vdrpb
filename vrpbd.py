@@ -166,18 +166,17 @@ for k in K:
     for i in N:
         for j in C:
             if i != j:
-                # load_change = - q[j] - gp.quicksum(Z_lambda[k, r, j] for r in R) + gp.quicksum(Z_varrho[k, r, j] for r in R)
-                # model.addConstr(p[k, j] <= p[k, i] + load_change + M * (1 - y[k, i, j]) + epsilon)
-                # model.addConstr(p[k, j] >= p[k, i] + load_change - M * (1 - y[k, i, j]) - epsilon)
-                load_change = q[j]
-                model.addConstr(p[k, j] <= p[k, i] - load_change + M * (1 - y[k, i, j]) + epsilon)
-                model.addConstr(p[k, j] >= p[k, i] - load_change - M * (1 - y[k, i, j]) - epsilon)
+                load_change = - q[j] - gp.quicksum(Z_lambda[k, r, j] for r in R) + gp.quicksum(Z_varrho[k, r, j] for r in R)
+                model.addConstr(p[k, j] <= p[k, i] + load_change + M * (1 - y[k, i, j]) + epsilon)
+                model.addConstr(p[k, j] >= p[k, i] + load_change - M * (1 - y[k, i, j]) - epsilon)
+                # load_change = q[j]
+                # model.addConstr(p[k, j] <= p[k, i] - load_change + M * (1 - y[k, i, j]) + epsilon)
+                # model.addConstr(p[k, j] >= p[k, i] - load_change - M * (1 - y[k, i, j]) - epsilon)
 
 for k in K:
     for i in N:
-        # model.addConstr(p[k, i] <= Q)
-        # model.addConstr(p[k, i] >= 0)
         model.addConstr(p[k, i] <= Q)
+        model.addConstr(p[k, i] >= 0)
         
 # 18-25
 for k in K:
