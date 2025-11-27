@@ -2,19 +2,19 @@ import gurobipy as gp
 from gurobipy import GRB
 import numpy as np
 
-L = [1, 2, 3]  
-B = [4, 5]     
+L = [1, 2, 3, 4]  
+B = [5, 6]     
 C = L + B      
 N = [0] + C    
 K = [1, 2]    
 R = list(range(1, 3))  
 
-Q = 100.0           
+Q = 30.0           
 Q_tilde = 20.0      
-tau_l = 1.0         
-tau_r = 1.0         
+tau_l = 0.5      
+tau_r = 0.5         
 c = 1.0             
-c_tilde = 0.5       
+c_tilde = 0.2      
 T_max = 500.0       
 M = 10000.0         
 
@@ -33,9 +33,9 @@ t_tilde = d_tilde / 40.0
 
 q = {0: 0}
 for i in L:
-    q[i] = np.random.uniform(5, 15)  
+    q[i] = np.random.uniform(8, 12)  
 for i in B:
-    q[i] = -np.random.uniform(5, 15)  
+    q[i] = -np.random.uniform(8, 12)  
 # q = {0: 0, 1: 10.0, 2: 15.0}
 
 s = {i: np.random.uniform(2, 5) for i in N}
@@ -46,7 +46,7 @@ t_start = {i: 0 for i in N}
 t_end = {i: 500.0 for i in N}  
 
 w1 = 1.0   
-w2 = 0.5  
+w2 = 0.1  
 
 model = gp.Model('VRPBD')
 
@@ -100,15 +100,28 @@ for k in K:
         model.addConstr(gp.quicksum(y[k, i, j] for j in N if j != i) == x[k, i])
 
 # 6-8. Sửa
-for k in K:
-    for r in R:
-        model.addConstr(gp.quicksum(lambda_var[k, r, i] for i in N) <= 1)
-        model.addConstr(gp.quicksum(varrho[k, r, j] for j in N) <= 1)
-        model.addConstr(gp.quicksum(lambda_var[k, r, i] for i in N) == gp.quicksum(varrho[k, r, j] for j in N))
+# for k in K:
+#     for r in R:
+#         model.addConstr(gp.quicksum(lambda_var[k, r, i] for i in N) <= 1)
+#         model.addConstr(gp.quicksum(varrho[k, r, j] for j in N) <= 1)
+#         model.addConstr(gp.quicksum(lambda_var[k, r, i] for i in N) == gp.quicksum(varrho[k, r, j] for j in N))
+
+# for k in K:
+#     for r in R:
+#         for i in C: #N 
+#             model.addConstr(lambda_var[k, r, i] <= x[k, i])
+#             model.addConstr(varrho[k, r, i] <= x[k, i])
 
 for k in K:
     for r in R:
-        for i in C: #N 
+        # Nếu drone phục vụ node thì phải có đúng 1 launch và 1 land
+        model.addConstr(gp.quicksum(lambda_var[k, r, i] for i in N) == gp.quicksum(x_tilde[k, r, i] for i in C))
+        model.addConstr(gp.quicksum(varrho[k, r, j] for j in N) == gp.quicksum(x_tilde[k, r, i] for i in C))
+
+# Drone chỉ launch/land tại nơi xe tải đến
+for k in K:
+    for r in R:
+        for i in C:  
             model.addConstr(lambda_var[k, r, i] <= x[k, i])
             model.addConstr(varrho[k, r, i] <= x[k, i])
 
@@ -158,7 +171,7 @@ for k in K:
 for k in K:
     initial_load = gp.quicksum(q[u] * x[k, u] for u in L)  
     model.addConstr(p[k, 0] == initial_load)
-    model.addConstr(initial_load <= Q)
+    # model.addConstr(initial_load <= Q)    
 
 # 15-17. Sửa j in C
 epsilon = 0.01
@@ -198,7 +211,6 @@ for k in K:
         for i in N:
             model.addConstr(p_tilde[k, r, i] <= drone_pickup + M * (1 - lambda_var[k, r, i]))
             model.addConstr(p_tilde[k, r, i] >= drone_pickup - M * (1 - lambda_var[k, r, i]))
-            # model.addConstr(p_tilde[k, r, i] <= Q_tilde)
 
 # 28-29
 for k in K:
@@ -307,14 +319,14 @@ print("\nSolving the model...")
 model.setParam('TimeLimit', 600)  
 model.setParam('MIPGap', 0.05)  
 model.setParam('OutputFlag', 1)
-model.setParam('NumericFocus', 2)  
+model.setParam('NumericFocus', 2) 
 
 model.optimize()
 
 if model.status == GRB.OPTIMAL or model.status == GRB.TIME_LIMIT:
-    print("\n" + "="*60)
+    print("\n")
     print("SOLUTION FOUND!")
-    print("="*60)
+
     print(f"Objective value: {model.ObjVal:.2f}")
     print(f"Total cost: {cost.getValue():.2f}")
     print(f"Spanning time: {spanning_time.X:.2f}")
@@ -323,18 +335,18 @@ if model.status == GRB.OPTIMAL or model.status == GRB.TIME_LIMIT:
     if model.status == GRB.TIME_LIMIT:
         print(f"MIP Gap: {model.MIPGap*100:.2f}%")
     
-    print("\n" + "-"*60)
-    print("TRUCK ROUTES:")
-    print("-"*60)
+    print("\n" )
+    print("DETAILED SOLUTION:")
+
     for k in K:
         route = []
         current = 0
         visited = set([0])
         route.append(0)
         
-        max_iter = len(N)
+        max_iter = len(N) * 2
         iter_count = 0
-        while len(visited) < len([i for i in N if x[k, i].X > 0.5]) and iter_count < max_iter:
+        while iter_count < max_iter:
             found = False
             for j in N:
                 if j not in visited and y[k, current, j].X > 0.5:
@@ -344,16 +356,66 @@ if model.status == GRB.OPTIMAL or model.status == GRB.TIME_LIMIT:
                     found = True
                     break
             if not found:
+                if current != 0 and y[k, current, 0].X > 0.5:
+                    route.append(0)
                 break
             iter_count += 1
         
         if len(route) > 1:
-            print(f"Vehicle {k}: {' -> '.join(map(str, route))}")
-            print(f"  Truck serves: {[i for i in C if x[k, i].X > 0.5]}")
+            truck_serves = [i for i in C if x[k, i].X > 0.5]
+            
+            print(f"\n")
+            print(f"VEHICLE {k}:")
+            print(f"Route: {' → '.join(map(str, route))}")
+            print(f"Truck serves: {truck_serves}")
+            
+            has_drone = False
+            for r in R:
+                served = [i for i in C if x_tilde[k, r, i].X > 0.5]
+                if served:
+                    if not has_drone:
+                        print(f"\nDrone trips:")
+                        has_drone = True
+                    
+                    launch = [i for i in N if lambda_var[k, r, i].X > 0.5]
+                    land = [i for i in N if varrho[k, r, i].X > 0.5]
+                    
+                    launch_node = launch[0] if launch else 'N/A'
+                    land_node = land[0] if land else 'N/A'
+                    
+                    drone_route = []
+                    drone_current = launch_node
+                    drone_visited = set()
+                    
+                    if launch_node != 'N/A':
+                        for _ in range(len(N)):
+                            drone_route.append(drone_current)
+                            drone_visited.add(drone_current)
+                            
+                            found_next = False
+                            for j in N:
+                                if j not in drone_visited and y_tilde[k, r, drone_current, j].X > 0.5:
+                                    drone_current = j
+                                    found_next = True
+                                    break
+                            if not found_next:
+                                break
+                        
+                        if land_node != 'N/A' and land_node not in drone_route:
+                            drone_route.append(land_node)
+                    
+                    drone_route_str = ' → '.join(map(str, drone_route)) if drone_route else 'N/A'
+                    
+                    print(f"  Drone {r}: departs from Vehicle {k} at node {launch_node} → "
+                          f"serves {served} → returns to node {land_node}")
+                    if drone_route:
+                        print(f"    Full route: {drone_route_str}")
+            
+            if not has_drone:
+                print(f"\nDrone trips: None")
     
-    print("\n" + "-"*60)
+    print("\n")
     print("DRONE TRIPS:")
-    print("-"*60)
     for k in K:
         for r in R:
             served = [i for i in C if x_tilde[k, r, i].X > 0.5]
@@ -365,9 +427,9 @@ if model.status == GRB.OPTIMAL or model.status == GRB.TIME_LIMIT:
                       f"Serve {served}, Land at {land[0] if land else 'N/A'}")
 
 elif model.status == GRB.INFEASIBLE:
-    print("\n" + "="*60)
+    print("\n")
     print("MODEL IS INFEASIBLE!")
-    print("="*60)
+
     print("Computing IIS")
     model.computeIIS()
     model.write("model_iis.ilp")
@@ -380,5 +442,6 @@ elif model.status == GRB.INFEASIBLE:
 else:
     print("\nNo solution found!")
     print(f"Status: {model.status}")
+
 
     
