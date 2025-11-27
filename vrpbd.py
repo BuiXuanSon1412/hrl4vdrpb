@@ -15,8 +15,8 @@ tau_l = 1.0
 tau_r = 1.0         
 c = 1.0             
 c_tilde = 0.5       
-T_max = 200.0       
-M = 1000.0         
+T_max = 500.0       
+M = 10000.0         
 
 np.random.seed(42)
 n_nodes = len(N)
@@ -108,11 +108,17 @@ for k in K:
 
 for k in K:
     for r in R:
-        for i in N:
+        for i in C: #N 
             model.addConstr(lambda_var[k, r, i] <= x[k, i])
             model.addConstr(varrho[k, r, i] <= x[k, i])
 
-# 9. Sửa i khác j
+# Thêm launch/land tại depot
+for k in K:
+    for r in R:
+        model.addConstr(lambda_var[k, r, 0] <= 1)
+        model.addConstr(varrho[k, r, 0] <= 1)
+
+# 9. 
 for k in K:
     for r in R:
         for i in N:
@@ -143,28 +149,36 @@ for k in K:
                     model.addConstr(z_tilde[k, r, i] - z_tilde[k, r, j] + 1 <= M * (1 - y_tilde[k, r, i, j]))
 
 # 14. Sửa
+# for k in K:
+#     initial_load = gp.quicksum(q[u] * x[k, u] for u in C if q[u] > 0) + \
+#                    gp.quicksum(q[u] * x_tilde[k, r, u] for u in C for r in R if q[u] > 0)
+#     model.addConstr(p[k, 0] == initial_load)
+#     model.addConstr(initial_load <= Q)
+
 for k in K:
-    initial_load = gp.quicksum(q[u] * x[k, u] for u in C if q[u] > 0) + \
-                   gp.quicksum(q[u] * x_tilde[k, r, u] for u in C for r in R if q[u] > 0)
+    initial_load = gp.quicksum(q[u] * x[k, u] for u in L)  
     model.addConstr(p[k, 0] == initial_load)
     model.addConstr(initial_load <= Q)
 
-# 15-17. Sửa
+# 15-17. Sửa j in C
 epsilon = 0.01
 for k in K:
     for i in N:
-        for j in N:
+        for j in C:
             if i != j:
-                load_change = - q[j] - gp.quicksum(Z_lambda[k, r, j] for r in R) + \
-                              gp.quicksum(Z_varrho[k, r, j] for r in R)
-                model.addConstr(p[k, j] <= p[k, i] + load_change + M * (1 - y[k, i, j]) + epsilon)
-                model.addConstr(p[k, j] >= p[k, i] + load_change - M * (1 - y[k, i, j]) - epsilon)
+                # load_change = - q[j] - gp.quicksum(Z_lambda[k, r, j] for r in R) + gp.quicksum(Z_varrho[k, r, j] for r in R)
+                # model.addConstr(p[k, j] <= p[k, i] + load_change + M * (1 - y[k, i, j]) + epsilon)
+                # model.addConstr(p[k, j] >= p[k, i] + load_change - M * (1 - y[k, i, j]) - epsilon)
+                load_change = q[j]
+                model.addConstr(p[k, j] <= p[k, i] - load_change + M * (1 - y[k, i, j]) + epsilon)
+                model.addConstr(p[k, j] >= p[k, i] - load_change - M * (1 - y[k, i, j]) - epsilon)
 
 for k in K:
     for i in N:
+        # model.addConstr(p[k, i] <= Q)
+        # model.addConstr(p[k, i] >= 0)
         model.addConstr(p[k, i] <= Q)
-        model.addConstr(p[k, i] >= 0)
-
+        
 # 18-25
 for k in K:
     for r in R:
@@ -177,30 +191,29 @@ for k in K:
             model.addConstr(Z_varrho[k, r, j] <= Q_tilde * varrho[k, r, j])
             model.addConstr(Z_varrho[k, r, j] >= p_tilde[k, r, j] - Q_tilde * (1 - varrho[k, r, j]))
 
-# 26-27
+# 26-27. Sửa
 for k in K:
     for r in R:
-        drone_pickup = gp.quicksum(q[u] * x_tilde[k, r, u] for u in C if q[u] > 0)
+        # drone_pickup = gp.quicksum(q[u] * x_tilde[k, r, u] for u in C if q[u] > 0)
+        drone_pickup = gp.quicksum(q[u] * x_tilde[k, r, u] for u in L)
         for i in N:
-            model.addConstr(p_tilde[k, r, i] >= drone_pickup - M * (1 - lambda_var[k, r, i]))
             model.addConstr(p_tilde[k, r, i] <= drone_pickup + M * (1 - lambda_var[k, r, i]))
-            model.addConstr(p_tilde[k, r, i] <= Q_tilde)
+            model.addConstr(p_tilde[k, r, i] >= drone_pickup - M * (1 - lambda_var[k, r, i]))
+            # model.addConstr(p_tilde[k, r, i] <= Q_tilde)
 
-# 28-29. Sửa
+# 28-29
 for k in K:
     for r in R:
         for j in N:
-            model.addConstr(p_tilde[k, r, j] <= Q_tilde * (1 - varrho[k, r, j]))
+            model.addConstr(p_tilde[k, r, j] <= M * (1 - varrho[k, r, j]))
 
-# 30-31
+# 30-31. Sửa j in C
 for k in K:
     for r in R:
         for i in N:
-            for j in N:
-                model.addConstr(p_tilde[k, r, j] <= p_tilde[k, r, i] - q[j] * x_tilde[k, r, j] + 
-                                M * (1 - y_tilde[k, r, i, j]))
-                model.addConstr(p_tilde[k, r, j] >= p_tilde[k, r, i] - q[j] * x_tilde[k, r, j] - 
-                                M * (1 - y_tilde[k, r, i, j]))
+            for j in C:
+                model.addConstr(p_tilde[k, r, j] <= p_tilde[k, r, i] - q[j] * x_tilde[k, r, j] + M * (1 - y_tilde[k, r, i, j]))
+                model.addConstr(p_tilde[k, r, j] >= p_tilde[k, r, i] - q[j] * x_tilde[k, r, j] - M * (1 - y_tilde[k, r, i, j]))
 
 # 32
 for k in K:
@@ -208,30 +221,30 @@ for k in K:
         for i in N:
             model.addConstr(p_tilde[k, r, i] <= Q_tilde)
 
-# 33-35
+# 33-35. Sửa i in C
 for i in C:
     model.addConstr(xi[i] >= t_start[i])
 
 for k in K:
-    for i in N:
+    for i in C: 
         model.addConstr(xi[i] >= a[k, i] - M * (1 - x[k, i]))
 
 for k in K:
-    for i in N:
+    for i in C:
         model.addConstr(xi[i] >= a_tilde[k, i] + tau_l - M * (1 - gp.quicksum(x_tilde[k, r, i] for r in R)))
 
-# 36. Sửa
+# 36. Sửa j in C
 for k in K:
     for i in N:
-        for j in N:
+        for j in C:
             if i != j:
                 model.addConstr(a[k, j] >= b[k, i] + t[i][j] - M * (1 - y[k, i, j]) - epsilon)
 
-# 37
+# 37. Sửa j in C
 for k in K:
     for r in R:
         for i in N:
-            for j in N:
+            for j in C:
                 model.addConstr(a_tilde[k, j] >= b_tilde[k, i] + tau_l + t_tilde[i][j] - M * (1 - y_tilde[k, r, i, j]))
 
 # 38-40. Sửa
@@ -244,13 +257,14 @@ for k in K:
         for i in C:
             model.addConstr(b[k, i] >= b_tilde[k, i] + tau_l - M * (1 - lambda_var[k, r, i]))
             model.addConstr(b[k, i] >= a_tilde[k, i] + tau_r - M * (1 - varrho[k, r, i]))
+            # model.addConstr(b[k, i] >= b_tilde[k, i] + tau_r - M * (1 - varrho[k, r, i]))
+            # model.addConstr(b[k, i] >= a[k, i] + tau_l - M * (1 - lambda_var[k, r, i]))
 
 # 41
 for k in K:
     for r in R:
         for i in C:
-            is_intermediate = x_tilde[k, r, i] - lambda_var[k, r, i] - varrho[k, r, i]
-            model.addConstr(b_tilde[k, i] >= xi[i] + s[i] - M * (1 - is_intermediate))
+            model.addConstr(b_tilde[k, i] >= xi[i] + s[i] - M * (1 - x_tilde[k, r, i]) - M * lambda_var[k, r, i] - M * varrho[k, r, i])
 
 # 42-43
 for k in K:
@@ -367,3 +381,5 @@ elif model.status == GRB.INFEASIBLE:
 else:
     print("\nNo solution found!")
     print(f"Status: {model.status}")
+
+    
