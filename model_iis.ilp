@@ -1,0 +1,462 @@
+\ Model VRPBD_copy
+\ LP format - for model browsing. Use MPS format to capture full model detail.
+Minimize
+ 
+Subject To
+ R5: x[1,1] + x[2,1] + x_tilde[1,1,1] + x_tilde[1,2,1] + x_tilde[2,1,1]
+   + x_tilde[2,2,1] = 1
+ R6: x[1,2] + x[2,2] + x_tilde[1,1,2] + x_tilde[1,2,2] + x_tilde[2,1,2]
+   + x_tilde[2,2,2] = 1
+ R7: x[1,3] + x[2,3] + x_tilde[1,1,3] + x_tilde[1,2,3] + x_tilde[2,1,3]
+   + x_tilde[2,2,3] = 1
+ R8: x[1,4] + x[2,4] + x_tilde[1,1,4] + x_tilde[1,2,4] + x_tilde[2,1,4]
+   + x_tilde[2,2,4] = 1
+ R9: x[1,5] + x[2,5] + x_tilde[1,1,5] + x_tilde[1,2,5] + x_tilde[2,1,5]
+   + x_tilde[2,2,5] = 1
+ R10: y[1,0,1] + y[1,0,2] + y[1,0,3] + y[1,0,4] + y[1,0,5] = 1
+ R12: y[2,0,1] + y[2,0,2] + y[2,0,3] + y[2,0,4] + y[2,0,5] = 1
+ R13: y[2,1,0] + y[2,2,0] + y[2,3,0] + y[2,4,0] + y[2,5,0] = 1
+ R14: - x[1,1] + y[1,0,1] + y[1,2,1] + y[1,3,1] + y[1,4,1] + y[1,5,1] = 0
+ R15: - x[1,1] + y[1,1,0] + y[1,1,2] + y[1,1,3] + y[1,1,4] + y[1,1,5] = 0
+ R16: - x[1,2] + y[1,0,2] + y[1,1,2] + y[1,3,2] + y[1,4,2] + y[1,5,2] = 0
+ R17: - x[1,2] + y[1,2,0] + y[1,2,1] + y[1,2,3] + y[1,2,4] + y[1,2,5] = 0
+ R18: - x[1,3] + y[1,0,3] + y[1,1,3] + y[1,2,3] + y[1,4,3] + y[1,5,3] = 0
+ R19: - x[1,3] + y[1,3,0] + y[1,3,1] + y[1,3,2] + y[1,3,4] + y[1,3,5] = 0
+ R20: - x[1,4] + y[1,0,4] + y[1,1,4] + y[1,2,4] + y[1,3,4] + y[1,5,4] = 0
+ R21: - x[1,4] + y[1,4,0] + y[1,4,1] + y[1,4,2] + y[1,4,3] + y[1,4,5] = 0
+ R22: - x[1,5] + y[1,0,5] + y[1,1,5] + y[1,2,5] + y[1,3,5] + y[1,4,5] = 0
+ R23: - x[1,5] + y[1,5,0] + y[1,5,1] + y[1,5,2] + y[1,5,3] + y[1,5,4] = 0
+ R24: - x[2,1] + y[2,0,1] + y[2,2,1] + y[2,3,1] + y[2,4,1] + y[2,5,1] = 0
+ R25: - x[2,1] + y[2,1,0] + y[2,1,2] + y[2,1,3] + y[2,1,4] + y[2,1,5] = 0
+ R26: - x[2,2] + y[2,0,2] + y[2,1,2] + y[2,3,2] + y[2,4,2] + y[2,5,2] = 0
+ R27: - x[2,2] + y[2,2,0] + y[2,2,1] + y[2,2,3] + y[2,2,4] + y[2,2,5] = 0
+ R28: - x[2,3] + y[2,0,3] + y[2,1,3] + y[2,2,3] + y[2,4,3] + y[2,5,3] = 0
+ R30: - x[2,4] + y[2,0,4] + y[2,1,4] + y[2,2,4] + y[2,3,4] + y[2,5,4] = 0
+ R31: - x[2,4] + y[2,4,0] + y[2,4,1] + y[2,4,2] + y[2,4,3] + y[2,4,5] = 0
+ R32: - x[2,5] + y[2,0,5] + y[2,1,5] + y[2,2,5] + y[2,3,5] + y[2,4,5] = 0
+ R33: - x[2,5] + y[2,5,0] + y[2,5,1] + y[2,5,2] + y[2,5,3] + y[2,5,4] = 0
+ R36: lambda[1,1,0] + lambda[1,1,1] + lambda[1,1,2] + lambda[1,1,3]
+   + lambda[1,1,4] + lambda[1,1,5] - varrho[1,1,0] - varrho[1,1,1]
+   - varrho[1,1,2] - varrho[1,1,3] - varrho[1,1,4] - varrho[1,1,5] = 0
+ R37: lambda[1,2,0] + lambda[1,2,1] + lambda[1,2,2] + lambda[1,2,3]
+   + lambda[1,2,4] + lambda[1,2,5] <= 1
+ R55: - x[1,4] + varrho[1,1,4] <= 0
+ R57: - x[1,5] + varrho[1,1,5] <= 0
+ R238: - x_tilde[1,1,1] + y_tilde[1,1,0,1] + y_tilde[1,1,2,1]
+   + y_tilde[1,1,3,1] + y_tilde[1,1,4,1] + y_tilde[1,1,5,1] + lambda[1,1,1]
+   - varrho[1,1,1] = 0
+ R239: - x_tilde[1,1,1] + y_tilde[1,1,1,0] + y_tilde[1,1,1,2]
+   + y_tilde[1,1,1,3] + y_tilde[1,1,1,4] + y_tilde[1,1,1,5] - lambda[1,1,1]
+   + varrho[1,1,1] = 0
+ R241: - x_tilde[1,1,2] + y_tilde[1,1,2,0] + y_tilde[1,1,2,1]
+   + y_tilde[1,1,2,3] + y_tilde[1,1,2,4] + y_tilde[1,1,2,5] - lambda[1,1,2]
+   + varrho[1,1,2] = 0
+ R242: - x_tilde[1,1,3] + y_tilde[1,1,0,3] + y_tilde[1,1,1,3]
+   + y_tilde[1,1,2,3] + y_tilde[1,1,4,3] + y_tilde[1,1,5,3] + lambda[1,1,3]
+   - varrho[1,1,3] = 0
+ R243: - x_tilde[1,1,3] + y_tilde[1,1,3,0] + y_tilde[1,1,3,1]
+   + y_tilde[1,1,3,2] + y_tilde[1,1,3,4] + y_tilde[1,1,3,5] - lambda[1,1,3]
+   + varrho[1,1,3] = 0
+ R244: - x_tilde[1,1,4] + y_tilde[1,1,0,4] + y_tilde[1,1,1,4]
+   + y_tilde[1,1,2,4] + y_tilde[1,1,3,4] + y_tilde[1,1,5,4] + lambda[1,1,4]
+   - varrho[1,1,4] = 0
+ R245: - x_tilde[1,1,4] + y_tilde[1,1,4,0] + y_tilde[1,1,4,1]
+   + y_tilde[1,1,4,2] + y_tilde[1,1,4,3] + y_tilde[1,1,4,5] - lambda[1,1,4]
+   + varrho[1,1,4] = 0
+ R247: - x_tilde[1,1,5] + y_tilde[1,1,5,0] + y_tilde[1,1,5,1]
+   + y_tilde[1,1,5,2] + y_tilde[1,1,5,3] + y_tilde[1,1,5,4] - lambda[1,1,5]
+   + varrho[1,1,5] = 0
+ R248: - x_tilde[1,2,1] + y_tilde[1,2,0,1] + y_tilde[1,2,2,1]
+   + y_tilde[1,2,3,1] + y_tilde[1,2,4,1] + y_tilde[1,2,5,1] + lambda[1,2,1]
+   - varrho[1,2,1] = 0
+ R252: - x_tilde[1,2,3] + y_tilde[1,2,0,3] + y_tilde[1,2,1,3]
+   + y_tilde[1,2,2,3] + y_tilde[1,2,4,3] + y_tilde[1,2,5,3] + lambda[1,2,3]
+   - varrho[1,2,3] = 0
+ R256: - x_tilde[1,2,5] + y_tilde[1,2,0,5] + y_tilde[1,2,1,5]
+   + y_tilde[1,2,2,5] + y_tilde[1,2,3,5] + y_tilde[1,2,4,5] + lambda[1,2,5]
+   - varrho[1,2,5] = 0
+ R259: - x_tilde[2,1,1] + y_tilde[2,1,1,0] + y_tilde[2,1,1,2]
+   + y_tilde[2,1,1,3] + y_tilde[2,1,1,4] + y_tilde[2,1,1,5] - lambda[2,1,1]
+   + varrho[2,1,1] = 0
+ R264: - x_tilde[2,1,4] + y_tilde[2,1,0,4] + y_tilde[2,1,1,4]
+   + y_tilde[2,1,2,4] + y_tilde[2,1,3,4] + y_tilde[2,1,5,4] + lambda[2,1,4]
+   - varrho[2,1,4] = 0
+ R268: - x_tilde[2,2,1] + y_tilde[2,2,0,1] + y_tilde[2,2,2,1]
+   + y_tilde[2,2,3,1] + y_tilde[2,2,4,1] + y_tilde[2,2,5,1] + lambda[2,2,1]
+   - varrho[2,2,1] = 0
+ R269: - x_tilde[2,2,1] + y_tilde[2,2,1,0] + y_tilde[2,2,1,2]
+   + y_tilde[2,2,1,3] + y_tilde[2,2,1,4] + y_tilde[2,2,1,5] - lambda[2,2,1]
+   + varrho[2,2,1] = 0
+ R400: 10000 y[1,0,1] - p[1,0] + p[1,1] + Z_lambda[1,1,1] + Z_lambda[1,2,1]
+   - Z_varrho[1,1,1] - Z_varrho[1,2,1] <= 9994.944778828763
+ R401: - 10000 y[1,0,1] - p[1,0] + p[1,1] + Z_lambda[1,1,1]
+   + Z_lambda[1,2,1] - Z_varrho[1,1,1] - Z_varrho[1,2,1]
+   >= -10005.05522117124
+ R402: 10000 y[1,0,2] - p[1,0] + p[1,2] + Z_lambda[1,1,2] + Z_lambda[1,2,2]
+   - Z_varrho[1,1,2] - Z_varrho[1,2,2] <= 9986.845385715451
+ R404: 10000 y[1,0,3] - p[1,0] + p[1,3] + Z_lambda[1,1,3] + Z_lambda[1,2,3]
+   - Z_varrho[1,1,3] - Z_varrho[1,2,3] <= 9987.931426561523
+ R405: - 10000 y[1,0,3] - p[1,0] + p[1,3] + Z_lambda[1,1,3]
+   + Z_lambda[1,2,3] - Z_varrho[1,1,3] - Z_varrho[1,2,3]
+   >= -10012.06857343848
+ R406: 10000 y[1,0,4] - p[1,0] + p[1,4] + Z_lambda[1,1,4] + Z_lambda[1,2,4]
+   - Z_varrho[1,1,4] - Z_varrho[1,2,4] <= 10012.29007168041
+ R407: - 10000 y[1,0,4] - p[1,0] + p[1,4] + Z_lambda[1,1,4]
+   + Z_lambda[1,2,4] - Z_varrho[1,1,4] - Z_varrho[1,2,4]
+   >= -9987.709928319589
+ R408: 10000 y[1,0,5] - p[1,0] + p[1,5] + Z_lambda[1,1,5] + Z_lambda[1,2,5]
+   - Z_varrho[1,1,5] - Z_varrho[1,2,5] <= 10012.71270346686
+ R409: - 10000 y[1,0,5] - p[1,0] + p[1,5] + Z_lambda[1,1,5]
+   + Z_lambda[1,2,5] - Z_varrho[1,1,5] - Z_varrho[1,2,5]
+   >= -9987.287296533141
+ R410: 10000 y[1,1,0] + p[1,0] - p[1,1] + Z_lambda[1,1,0] + Z_lambda[1,2,0]
+   - Z_varrho[1,1,0] - Z_varrho[1,2,0] <= 10000
+ R411: - 10000 y[1,1,0] + p[1,0] - p[1,1] + Z_lambda[1,1,0]
+   + Z_lambda[1,2,0] - Z_varrho[1,1,0] - Z_varrho[1,2,0] >= -10000
+ R412: 10000 y[1,1,2] - p[1,1] + p[1,2] + Z_lambda[1,1,2] + Z_lambda[1,2,2]
+   - Z_varrho[1,1,2] - Z_varrho[1,2,2] <= 9986.845385715451
+ R414: 10000 y[1,1,3] - p[1,1] + p[1,3] + Z_lambda[1,1,3] + Z_lambda[1,2,3]
+   - Z_varrho[1,1,3] - Z_varrho[1,2,3] <= 9987.931426561523
+ R415: - 10000 y[1,1,3] - p[1,1] + p[1,3] + Z_lambda[1,1,3]
+   + Z_lambda[1,2,3] - Z_varrho[1,1,3] - Z_varrho[1,2,3]
+   >= -10012.06857343848
+ R416: 10000 y[1,1,4] - p[1,1] + p[1,4] + Z_lambda[1,1,4] + Z_lambda[1,2,4]
+   - Z_varrho[1,1,4] - Z_varrho[1,2,4] <= 10012.29007168041
+ R417: - 10000 y[1,1,4] - p[1,1] + p[1,4] + Z_lambda[1,1,4]
+   + Z_lambda[1,2,4] - Z_varrho[1,1,4] - Z_varrho[1,2,4]
+   >= -9987.709928319589
+ R418: 10000 y[1,1,5] - p[1,1] + p[1,5] + Z_lambda[1,1,5] + Z_lambda[1,2,5]
+   - Z_varrho[1,1,5] - Z_varrho[1,2,5] <= 10012.71270346686
+ R419: - 10000 y[1,1,5] - p[1,1] + p[1,5] + Z_lambda[1,1,5]
+   + Z_lambda[1,2,5] - Z_varrho[1,1,5] - Z_varrho[1,2,5]
+   >= -9987.287296533141
+ R420: 10000 y[1,2,0] + p[1,0] - p[1,2] + Z_lambda[1,1,0] + Z_lambda[1,2,0]
+   - Z_varrho[1,1,0] - Z_varrho[1,2,0] <= 10000
+ R422: 10000 y[1,2,1] + p[1,1] - p[1,2] + Z_lambda[1,1,1] + Z_lambda[1,2,1]
+   - Z_varrho[1,1,1] - Z_varrho[1,2,1] <= 9994.944778828763
+ R426: 10000 y[1,2,4] - p[1,2] + p[1,4] + Z_lambda[1,1,4] + Z_lambda[1,2,4]
+   - Z_varrho[1,1,4] - Z_varrho[1,2,4] <= 10012.29007168041
+ R428: 10000 y[1,2,5] - p[1,2] + p[1,5] + Z_lambda[1,1,5] + Z_lambda[1,2,5]
+   - Z_varrho[1,1,5] - Z_varrho[1,2,5] <= 10012.71270346686
+ R430: 10000 y[1,3,0] + p[1,0] - p[1,3] + Z_lambda[1,1,0] + Z_lambda[1,2,0]
+   - Z_varrho[1,1,0] - Z_varrho[1,2,0] <= 10000
+ R431: - 10000 y[1,3,0] + p[1,0] - p[1,3] + Z_lambda[1,1,0]
+   + Z_lambda[1,2,0] - Z_varrho[1,1,0] - Z_varrho[1,2,0] >= -10000
+ R432: 10000 y[1,3,1] + p[1,1] - p[1,3] + Z_lambda[1,1,1] + Z_lambda[1,2,1]
+   - Z_varrho[1,1,1] - Z_varrho[1,2,1] <= 9994.944778828763
+ R433: - 10000 y[1,3,1] + p[1,1] - p[1,3] + Z_lambda[1,1,1]
+   + Z_lambda[1,2,1] - Z_varrho[1,1,1] - Z_varrho[1,2,1]
+   >= -10005.05522117124
+ R436: 10000 y[1,3,4] - p[1,3] + p[1,4] + Z_lambda[1,1,4] + Z_lambda[1,2,4]
+   - Z_varrho[1,1,4] - Z_varrho[1,2,4] <= 10012.29007168041
+ R437: - 10000 y[1,3,4] - p[1,3] + p[1,4] + Z_lambda[1,1,4]
+   + Z_lambda[1,2,4] - Z_varrho[1,1,4] - Z_varrho[1,2,4]
+   >= -9987.709928319589
+ R438: 10000 y[1,3,5] - p[1,3] + p[1,5] + Z_lambda[1,1,5] + Z_lambda[1,2,5]
+   - Z_varrho[1,1,5] - Z_varrho[1,2,5] <= 10012.71270346686
+ R439: - 10000 y[1,3,5] - p[1,3] + p[1,5] + Z_lambda[1,1,5]
+   + Z_lambda[1,2,5] - Z_varrho[1,1,5] - Z_varrho[1,2,5]
+   >= -9987.287296533141
+ R440: 10000 y[1,4,0] + p[1,0] - p[1,4] + Z_lambda[1,1,0] + Z_lambda[1,2,0]
+   - Z_varrho[1,1,0] - Z_varrho[1,2,0] <= 10000
+ R441: - 10000 y[1,4,0] + p[1,0] - p[1,4] + Z_lambda[1,1,0]
+   + Z_lambda[1,2,0] - Z_varrho[1,1,0] - Z_varrho[1,2,0] >= -10000
+ R442: 10000 y[1,4,1] + p[1,1] - p[1,4] + Z_lambda[1,1,1] + Z_lambda[1,2,1]
+   - Z_varrho[1,1,1] - Z_varrho[1,2,1] <= 9994.944778828763
+ R443: - 10000 y[1,4,1] + p[1,1] - p[1,4] + Z_lambda[1,1,1]
+   + Z_lambda[1,2,1] - Z_varrho[1,1,1] - Z_varrho[1,2,1]
+   >= -10005.05522117124
+ R444: 10000 y[1,4,2] + p[1,2] - p[1,4] + Z_lambda[1,1,2] + Z_lambda[1,2,2]
+   - Z_varrho[1,1,2] - Z_varrho[1,2,2] <= 9986.845385715451
+ R446: 10000 y[1,4,3] + p[1,3] - p[1,4] + Z_lambda[1,1,3] + Z_lambda[1,2,3]
+   - Z_varrho[1,1,3] - Z_varrho[1,2,3] <= 9987.931426561523
+ R447: - 10000 y[1,4,3] + p[1,3] - p[1,4] + Z_lambda[1,1,3]
+   + Z_lambda[1,2,3] - Z_varrho[1,1,3] - Z_varrho[1,2,3]
+   >= -10012.06857343848
+ R449: - 10000 y[1,4,5] - p[1,4] + p[1,5] + Z_lambda[1,1,5]
+   + Z_lambda[1,2,5] - Z_varrho[1,1,5] - Z_varrho[1,2,5]
+   >= -9987.287296533141
+ R450: 10000 y[1,5,0] + p[1,0] - p[1,5] + Z_lambda[1,1,0] + Z_lambda[1,2,0]
+   - Z_varrho[1,1,0] - Z_varrho[1,2,0] <= 10000
+ R451: - 10000 y[1,5,0] + p[1,0] - p[1,5] + Z_lambda[1,1,0]
+   + Z_lambda[1,2,0] - Z_varrho[1,1,0] - Z_varrho[1,2,0] >= -10000
+ R452: 10000 y[1,5,1] + p[1,1] - p[1,5] + Z_lambda[1,1,1] + Z_lambda[1,2,1]
+   - Z_varrho[1,1,1] - Z_varrho[1,2,1] <= 9994.944778828763
+ R453: - 10000 y[1,5,1] + p[1,1] - p[1,5] + Z_lambda[1,1,1]
+   + Z_lambda[1,2,1] - Z_varrho[1,1,1] - Z_varrho[1,2,1]
+   >= -10005.05522117124
+ R454: 10000 y[1,5,2] + p[1,2] - p[1,5] + Z_lambda[1,1,2] + Z_lambda[1,2,2]
+   - Z_varrho[1,1,2] - Z_varrho[1,2,2] <= 9986.845385715451
+ R456: 10000 y[1,5,3] + p[1,3] - p[1,5] + Z_lambda[1,1,3] + Z_lambda[1,2,3]
+   - Z_varrho[1,1,3] - Z_varrho[1,2,3] <= 9987.931426561523
+ R457: - 10000 y[1,5,3] + p[1,3] - p[1,5] + Z_lambda[1,1,3]
+   + Z_lambda[1,2,3] - Z_varrho[1,1,3] - Z_varrho[1,2,3]
+   >= -10012.06857343848
+ R459: - 10000 y[1,5,4] + p[1,4] - p[1,5] + Z_lambda[1,1,4]
+   + Z_lambda[1,2,4] - Z_varrho[1,1,4] - Z_varrho[1,2,4]
+   >= -9987.709928319589
+ R460: 10000 y[2,0,1] - p[2,0] + p[2,1] + Z_lambda[2,1,1] + Z_lambda[2,2,1]
+   - Z_varrho[2,1,1] - Z_varrho[2,2,1] <= 9994.944778828763
+ R461: - 10000 y[2,0,1] - p[2,0] + p[2,1] + Z_lambda[2,1,1]
+   + Z_lambda[2,2,1] - Z_varrho[2,1,1] - Z_varrho[2,2,1]
+   >= -10005.05522117124
+ R464: 10000 y[2,0,3] - p[2,0] + p[2,3] + Z_lambda[2,1,3] + Z_lambda[2,2,3]
+   - Z_varrho[2,1,3] - Z_varrho[2,2,3] <= 9987.931426561523
+ R467: - 10000 y[2,0,4] - p[2,0] + p[2,4] + Z_lambda[2,1,4]
+   + Z_lambda[2,2,4] - Z_varrho[2,1,4] - Z_varrho[2,2,4]
+   >= -9987.709928319589
+ R469: - 10000 y[2,0,5] - p[2,0] + p[2,5] + Z_lambda[2,1,5]
+   + Z_lambda[2,2,5] - Z_varrho[2,1,5] - Z_varrho[2,2,5]
+   >= -9987.287296533141
+ R470: 10000 y[2,1,0] + p[2,0] - p[2,1] + Z_lambda[2,1,0] + Z_lambda[2,2,0]
+   - Z_varrho[2,1,0] - Z_varrho[2,2,0] <= 10000
+ R471: - 10000 y[2,1,0] + p[2,0] - p[2,1] + Z_lambda[2,1,0]
+   + Z_lambda[2,2,0] - Z_varrho[2,1,0] - Z_varrho[2,2,0] >= -10000
+ R474: 10000 y[2,1,3] - p[2,1] + p[2,3] + Z_lambda[2,1,3] + Z_lambda[2,2,3]
+   - Z_varrho[2,1,3] - Z_varrho[2,2,3] <= 9987.931426561523
+ R477: - 10000 y[2,1,4] - p[2,1] + p[2,4] + Z_lambda[2,1,4]
+   + Z_lambda[2,2,4] - Z_varrho[2,1,4] - Z_varrho[2,2,4]
+   >= -9987.709928319589
+ R479: - 10000 y[2,1,5] - p[2,1] + p[2,5] + Z_lambda[2,1,5]
+   + Z_lambda[2,2,5] - Z_varrho[2,1,5] - Z_varrho[2,2,5]
+   >= -9987.287296533141
+ R490: 10000 y[2,3,0] + p[2,0] - p[2,3] + Z_lambda[2,1,0] + Z_lambda[2,2,0]
+   - Z_varrho[2,1,0] - Z_varrho[2,2,0] <= 10000
+ R492: 10000 y[2,3,1] + p[2,1] - p[2,3] + Z_lambda[2,1,1] + Z_lambda[2,2,1]
+   - Z_varrho[2,1,1] - Z_varrho[2,2,1] <= 9994.944778828763
+ R501: - 10000 y[2,4,0] + p[2,0] - p[2,4] + Z_lambda[2,1,0]
+   + Z_lambda[2,2,0] - Z_varrho[2,1,0] - Z_varrho[2,2,0] >= -10000
+ R503: - 10000 y[2,4,1] + p[2,1] - p[2,4] + Z_lambda[2,1,1]
+   + Z_lambda[2,2,1] - Z_varrho[2,1,1] - Z_varrho[2,2,1]
+   >= -10005.05522117124
+ R509: - 10000 y[2,4,5] - p[2,4] + p[2,5] + Z_lambda[2,1,5]
+   + Z_lambda[2,2,5] - Z_varrho[2,1,5] - Z_varrho[2,2,5]
+   >= -9987.287296533141
+ R511: - 10000 y[2,5,0] + p[2,0] - p[2,5] + Z_lambda[2,1,0]
+   + Z_lambda[2,2,0] - Z_varrho[2,1,0] - Z_varrho[2,2,0] >= -10000
+ R513: - 10000 y[2,5,1] + p[2,1] - p[2,5] + Z_lambda[2,1,1]
+   + Z_lambda[2,2,1] - Z_varrho[2,1,1] - Z_varrho[2,2,1]
+   >= -10005.05522117124
+ R519: - 10000 y[2,5,4] + p[2,4] - p[2,5] + Z_lambda[2,1,4]
+   + Z_lambda[2,2,4] - Z_varrho[2,1,4] - Z_varrho[2,2,4]
+   >= -9987.709928319589
+ truck_capacity_1_4: p[1,4] <= 100
+ R532: - p_tilde[1,1,0] + Z_lambda[1,1,0] <= 0
+ R533: - 20 lambda[1,1,0] + Z_lambda[1,1,0] <= 0
+ R534: - 20 lambda[1,1,0] - p_tilde[1,1,0] + Z_lambda[1,1,0] >= -20
+ R535: - p_tilde[1,1,0] + Z_varrho[1,1,0] <= 0
+ R536: - 20 varrho[1,1,0] + Z_varrho[1,1,0] <= 0
+ R538: - p_tilde[1,1,1] + Z_lambda[1,1,1] <= 0
+ R539: - 20 lambda[1,1,1] + Z_lambda[1,1,1] <= 0
+ R541: - p_tilde[1,1,1] + Z_varrho[1,1,1] <= 0
+ R542: - 20 varrho[1,1,1] + Z_varrho[1,1,1] <= 0
+ R547: - p_tilde[1,1,2] + Z_varrho[1,1,2] <= 0
+ R548: - 20 varrho[1,1,2] + Z_varrho[1,1,2] <= 0
+ R550: - p_tilde[1,1,3] + Z_lambda[1,1,3] <= 0
+ R551: - 20 lambda[1,1,3] + Z_lambda[1,1,3] <= 0
+ R553: - p_tilde[1,1,3] + Z_varrho[1,1,3] <= 0
+ R554: - 20 varrho[1,1,3] + Z_varrho[1,1,3] <= 0
+ R556: - p_tilde[1,1,4] + Z_lambda[1,1,4] <= 0
+ R557: - 20 lambda[1,1,4] + Z_lambda[1,1,4] <= 0
+ R558: - 20 lambda[1,1,4] - p_tilde[1,1,4] + Z_lambda[1,1,4] >= -20
+ R559: - p_tilde[1,1,4] + Z_varrho[1,1,4] <= 0
+ R560: - 20 varrho[1,1,4] + Z_varrho[1,1,4] <= 0
+ R561: - 20 varrho[1,1,4] - p_tilde[1,1,4] + Z_varrho[1,1,4] >= -20
+ R562: - p_tilde[1,1,5] + Z_lambda[1,1,5] <= 0
+ R563: - 20 lambda[1,1,5] + Z_lambda[1,1,5] <= 0
+ R564: - 20 lambda[1,1,5] - p_tilde[1,1,5] + Z_lambda[1,1,5] >= -20
+ R565: - p_tilde[1,1,5] + Z_varrho[1,1,5] <= 0
+ R566: - 20 varrho[1,1,5] + Z_varrho[1,1,5] <= 0
+ R567: - 20 varrho[1,1,5] - p_tilde[1,1,5] + Z_varrho[1,1,5] >= -20
+ R568: - p_tilde[1,2,0] + Z_lambda[1,2,0] <= 0
+ R569: - 20 lambda[1,2,0] + Z_lambda[1,2,0] <= 0
+ R570: - 20 lambda[1,2,0] - p_tilde[1,2,0] + Z_lambda[1,2,0] >= -20
+ R571: - p_tilde[1,2,0] + Z_varrho[1,2,0] <= 0
+ R572: - 20 varrho[1,2,0] + Z_varrho[1,2,0] <= 0
+ R574: - p_tilde[1,2,1] + Z_lambda[1,2,1] <= 0
+ R575: - 20 lambda[1,2,1] + Z_lambda[1,2,1] <= 0
+ R577: - p_tilde[1,2,1] + Z_varrho[1,2,1] <= 0
+ R578: - 20 varrho[1,2,1] + Z_varrho[1,2,1] <= 0
+ R583: - p_tilde[1,2,2] + Z_varrho[1,2,2] <= 0
+ R584: - 20 varrho[1,2,2] + Z_varrho[1,2,2] <= 0
+ R586: - p_tilde[1,2,3] + Z_lambda[1,2,3] <= 0
+ R587: - 20 lambda[1,2,3] + Z_lambda[1,2,3] <= 0
+ R589: - p_tilde[1,2,3] + Z_varrho[1,2,3] <= 0
+ R590: - 20 varrho[1,2,3] + Z_varrho[1,2,3] <= 0
+ R592: - p_tilde[1,2,4] + Z_lambda[1,2,4] <= 0
+ R593: - 20 lambda[1,2,4] + Z_lambda[1,2,4] <= 0
+ R594: - 20 lambda[1,2,4] - p_tilde[1,2,4] + Z_lambda[1,2,4] >= -20
+ R595: - p_tilde[1,2,4] + Z_varrho[1,2,4] <= 0
+ R596: - 20 varrho[1,2,4] + Z_varrho[1,2,4] <= 0
+ R598: - p_tilde[1,2,5] + Z_lambda[1,2,5] <= 0
+ R599: - 20 lambda[1,2,5] + Z_lambda[1,2,5] <= 0
+ R601: - p_tilde[1,2,5] + Z_varrho[1,2,5] <= 0
+ R602: - 20 varrho[1,2,5] + Z_varrho[1,2,5] <= 0
+ R604: - p_tilde[2,1,0] + Z_lambda[2,1,0] <= 0
+ R605: - 20 lambda[2,1,0] + Z_lambda[2,1,0] <= 0
+ R607: - p_tilde[2,1,0] + Z_varrho[2,1,0] <= 0
+ R608: - 20 varrho[2,1,0] + Z_varrho[2,1,0] <= 0
+ R610: - p_tilde[2,1,1] + Z_lambda[2,1,1] <= 0
+ R611: - 20 lambda[2,1,1] + Z_lambda[2,1,1] <= 0
+ R612: - 20 lambda[2,1,1] - p_tilde[2,1,1] + Z_lambda[2,1,1] >= -20
+ R613: - p_tilde[2,1,1] + Z_varrho[2,1,1] <= 0
+ R614: - 20 varrho[2,1,1] + Z_varrho[2,1,1] <= 0
+ R625: - p_tilde[2,1,3] + Z_varrho[2,1,3] <= 0
+ R626: - 20 varrho[2,1,3] + Z_varrho[2,1,3] <= 0
+ R628: - p_tilde[2,1,4] + Z_lambda[2,1,4] <= 0
+ R629: - 20 lambda[2,1,4] + Z_lambda[2,1,4] <= 0
+ R633: - 20 varrho[2,1,4] - p_tilde[2,1,4] + Z_varrho[2,1,4] >= -20
+ R634: - p_tilde[2,1,5] + Z_lambda[2,1,5] <= 0
+ R635: - 20 lambda[2,1,5] + Z_lambda[2,1,5] <= 0
+ R640: - p_tilde[2,2,0] + Z_lambda[2,2,0] <= 0
+ R641: - 20 lambda[2,2,0] + Z_lambda[2,2,0] <= 0
+ R643: - p_tilde[2,2,0] + Z_varrho[2,2,0] <= 0
+ R644: - 20 varrho[2,2,0] + Z_varrho[2,2,0] <= 0
+ R646: - p_tilde[2,2,1] + Z_lambda[2,2,1] <= 0
+ R647: - 20 lambda[2,2,1] + Z_lambda[2,2,1] <= 0
+ R648: - 20 lambda[2,2,1] - p_tilde[2,2,1] + Z_lambda[2,2,1] >= -20
+ R649: - p_tilde[2,2,1] + Z_varrho[2,2,1] <= 0
+ R650: - 20 varrho[2,2,1] + Z_varrho[2,2,1] <= 0
+ R651: - 20 varrho[2,2,1] - p_tilde[2,2,1] + Z_varrho[2,2,1] >= -20
+ R661: - p_tilde[2,2,3] + Z_varrho[2,2,3] <= 0
+ R662: - 20 varrho[2,2,3] + Z_varrho[2,2,3] <= 0
+ R664: - p_tilde[2,2,4] + Z_lambda[2,2,4] <= 0
+ R665: - 20 lambda[2,2,4] + Z_lambda[2,2,4] <= 0
+ R670: - p_tilde[2,2,5] + Z_lambda[2,2,5] <= 0
+ R671: - 20 lambda[2,2,5] + Z_lambda[2,2,5] <= 0
+ R676: - 5.055221171236024 x_tilde[1,1,1]
+   - 13.15461428454834 x_tilde[1,1,2] - 12.06857343847617 x_tilde[1,1,3]
+   - 10000 lambda[1,1,0] + p_tilde[1,1,0] >= -10000
+ R686: - 5.055221171236024 x_tilde[1,1,1]
+   - 13.15461428454834 x_tilde[1,1,2] - 12.06857343847617 x_tilde[1,1,3]
+   - 10000 lambda[1,1,5] + p_tilde[1,1,5] >= -10000
+ R687: - 5.055221171236024 x_tilde[1,1,1]
+   - 13.15461428454834 x_tilde[1,1,2] - 12.06857343847617 x_tilde[1,1,3]
+   + 10000 lambda[1,1,5] + p_tilde[1,1,5] <= 10000
+ R688: - 5.055221171236024 x_tilde[1,2,1]
+   - 13.15461428454834 x_tilde[1,2,2] - 12.06857343847617 x_tilde[1,2,3]
+   - 10000 lambda[1,2,0] + p_tilde[1,2,0] >= -10000
+ R689: - 5.055221171236024 x_tilde[1,2,1]
+   - 13.15461428454834 x_tilde[1,2,2] - 12.06857343847617 x_tilde[1,2,3]
+   + 10000 lambda[1,2,0] + p_tilde[1,2,0] <= 10000
+ R696: - 5.055221171236024 x_tilde[1,2,1]
+   - 13.15461428454834 x_tilde[1,2,2] - 12.06857343847617 x_tilde[1,2,3]
+   - 10000 lambda[1,2,4] + p_tilde[1,2,4] >= -10000
+ R697: - 5.055221171236024 x_tilde[1,2,1]
+   - 13.15461428454834 x_tilde[1,2,2] - 12.06857343847617 x_tilde[1,2,3]
+   + 10000 lambda[1,2,4] + p_tilde[1,2,4] <= 10000
+ R701: - 5.055221171236024 x_tilde[2,1,1]
+   - 13.15461428454834 x_tilde[2,1,2] - 12.06857343847617 x_tilde[2,1,3]
+   + 10000 lambda[2,1,0] + p_tilde[2,1,0] <= 10000
+ R703: - 5.055221171236024 x_tilde[2,1,1]
+   - 13.15461428454834 x_tilde[2,1,2] - 12.06857343847617 x_tilde[2,1,3]
+   + 10000 lambda[2,1,1] + p_tilde[2,1,1] <= 10000
+ R711: - 5.055221171236024 x_tilde[2,1,1]
+   - 13.15461428454834 x_tilde[2,1,2] - 12.06857343847617 x_tilde[2,1,3]
+   + 10000 lambda[2,1,5] + p_tilde[2,1,5] <= 10000
+ R713: - 5.055221171236024 x_tilde[2,2,1]
+   - 13.15461428454834 x_tilde[2,2,2] - 12.06857343847617 x_tilde[2,2,3]
+   + 10000 lambda[2,2,0] + p_tilde[2,2,0] <= 10000
+ R721: - 5.055221171236024 x_tilde[2,2,1]
+   - 13.15461428454834 x_tilde[2,2,2] - 12.06857343847617 x_tilde[2,2,3]
+   + 10000 lambda[2,2,4] + p_tilde[2,2,4] <= 10000
+ R723: - 5.055221171236024 x_tilde[2,2,1]
+   - 13.15461428454834 x_tilde[2,2,2] - 12.06857343847617 x_tilde[2,2,3]
+   + 10000 lambda[2,2,5] + p_tilde[2,2,5] <= 10000
+ R724: 10000 varrho[1,1,0] + p_tilde[1,1,0] <= 10000
+ R725: 10000 varrho[1,1,1] + p_tilde[1,1,1] <= 10000
+ R726: 10000 varrho[1,1,2] + p_tilde[1,1,2] <= 10000
+ R727: 10000 varrho[1,1,3] + p_tilde[1,1,3] <= 10000
+ R730: 10000 varrho[1,2,0] + p_tilde[1,2,0] <= 10000
+ R731: 10000 varrho[1,2,1] + p_tilde[1,2,1] <= 10000
+ R732: 10000 varrho[1,2,2] + p_tilde[1,2,2] <= 10000
+ R733: 10000 varrho[1,2,3] + p_tilde[1,2,3] <= 10000
+ R734: 10000 varrho[1,2,4] + p_tilde[1,2,4] <= 10000
+ R735: 10000 varrho[1,2,5] + p_tilde[1,2,5] <= 10000
+ R736: 10000 varrho[2,1,0] + p_tilde[2,1,0] <= 10000
+ R739: 10000 varrho[2,1,3] + p_tilde[2,1,3] <= 10000
+ R742: 10000 varrho[2,2,0] + p_tilde[2,2,0] <= 10000
+ R745: 10000 varrho[2,2,3] + p_tilde[2,2,3] <= 10000
+ R751: 5.055221171236024 x_tilde[1,1,1] - 10000 y_tilde[1,1,0,1]
+   - p_tilde[1,1,0] + p_tilde[1,1,1] >= -10000
+ R755: 12.06857343847617 x_tilde[1,1,3] - 10000 y_tilde[1,1,0,3]
+   - p_tilde[1,1,0] + p_tilde[1,1,3] >= -10000
+Bounds
+ p[1,0] free
+ p[1,1] free
+ p[1,2] free
+ p[1,4] free
+ p[1,5] free
+ p[2,0] free
+ p[2,1] free
+ p[2,3] free
+ p[2,4] free
+ p[2,5] free
+ p_tilde[1,1,0] free
+ p_tilde[1,1,1] free
+ p_tilde[1,1,2] free
+ p_tilde[1,1,3] free
+ p_tilde[1,1,4] free
+ p_tilde[1,1,5] free
+ p_tilde[1,2,0] free
+ p_tilde[1,2,1] free
+ p_tilde[1,2,2] free
+ p_tilde[1,2,3] free
+ p_tilde[1,2,4] free
+ p_tilde[1,2,5] free
+ p_tilde[2,1,0] free
+ p_tilde[2,1,1] free
+ p_tilde[2,1,3] free
+ p_tilde[2,1,4] free
+ p_tilde[2,1,5] free
+ p_tilde[2,2,0] free
+ p_tilde[2,2,1] free
+ p_tilde[2,2,3] free
+ p_tilde[2,2,4] free
+ p_tilde[2,2,5] free
+ Z_lambda[2,1,4] free
+ Z_lambda[2,1,5] free
+ Z_lambda[2,2,4] free
+ Z_lambda[2,2,5] free
+ Z_varrho[1,1,2] free
+ Z_varrho[1,2,2] free
+ Z_varrho[2,1,3] free
+ Z_varrho[2,2,3] free
+Binaries
+ x[1,1] x[1,2] x[1,3] x[1,4] x[1,5] x[2,1] x[2,2] x[2,3] x[2,4] x[2,5]
+ y[1,0,1] y[1,0,2] y[1,0,3] y[1,0,4] y[1,0,5] y[1,1,0] y[1,1,2] y[1,1,3]
+ y[1,1,4] y[1,1,5] y[1,2,0] y[1,2,1] y[1,2,3] y[1,2,4] y[1,2,5] y[1,3,0]
+ y[1,3,1] y[1,3,2] y[1,3,4] y[1,3,5] y[1,4,0] y[1,4,1] y[1,4,2] y[1,4,3]
+ y[1,4,5] y[1,5,0] y[1,5,1] y[1,5,2] y[1,5,3] y[1,5,4] y[2,0,1] y[2,0,2]
+ y[2,0,3] y[2,0,4] y[2,0,5] y[2,1,0] y[2,1,2] y[2,1,3] y[2,1,4] y[2,1,5]
+ y[2,2,0] y[2,2,1] y[2,2,3] y[2,2,4] y[2,2,5] y[2,3,0] y[2,3,1] y[2,3,2]
+ y[2,3,4] y[2,3,5] y[2,4,0] y[2,4,1] y[2,4,2] y[2,4,3] y[2,4,5] y[2,5,0]
+ y[2,5,1] y[2,5,2] y[2,5,3] y[2,5,4] x_tilde[1,1,1] x_tilde[1,1,2]
+ x_tilde[1,1,3] x_tilde[1,1,4] x_tilde[1,1,5] x_tilde[1,2,1] x_tilde[1,2,2]
+ x_tilde[1,2,3] x_tilde[1,2,4] x_tilde[1,2,5] x_tilde[2,1,1] x_tilde[2,1,2]
+ x_tilde[2,1,3] x_tilde[2,1,4] x_tilde[2,1,5] x_tilde[2,2,1] x_tilde[2,2,2]
+ x_tilde[2,2,3] x_tilde[2,2,4] x_tilde[2,2,5] y_tilde[1,1,0,1]
+ y_tilde[1,1,0,3] y_tilde[1,1,0,4] y_tilde[1,1,1,0] y_tilde[1,1,1,2]
+ y_tilde[1,1,1,3] y_tilde[1,1,1,4] y_tilde[1,1,1,5] y_tilde[1,1,2,0]
+ y_tilde[1,1,2,1] y_tilde[1,1,2,3] y_tilde[1,1,2,4] y_tilde[1,1,2,5]
+ y_tilde[1,1,3,0] y_tilde[1,1,3,1] y_tilde[1,1,3,2] y_tilde[1,1,3,4]
+ y_tilde[1,1,3,5] y_tilde[1,1,4,0] y_tilde[1,1,4,1] y_tilde[1,1,4,2]
+ y_tilde[1,1,4,3] y_tilde[1,1,4,5] y_tilde[1,1,5,0] y_tilde[1,1,5,1]
+ y_tilde[1,1,5,2] y_tilde[1,1,5,3] y_tilde[1,1,5,4] y_tilde[1,2,0,1]
+ y_tilde[1,2,0,3] y_tilde[1,2,0,5] y_tilde[1,2,1,3] y_tilde[1,2,1,5]
+ y_tilde[1,2,2,1] y_tilde[1,2,2,3] y_tilde[1,2,2,5] y_tilde[1,2,3,1]
+ y_tilde[1,2,3,5] y_tilde[1,2,4,1] y_tilde[1,2,4,3] y_tilde[1,2,4,5]
+ y_tilde[1,2,5,1] y_tilde[1,2,5,3] y_tilde[2,1,0,4] y_tilde[2,1,1,0]
+ y_tilde[2,1,1,2] y_tilde[2,1,1,3] y_tilde[2,1,1,4] y_tilde[2,1,1,5]
+ y_tilde[2,1,2,4] y_tilde[2,1,3,4] y_tilde[2,1,5,4] y_tilde[2,2,0,1]
+ y_tilde[2,2,1,0] y_tilde[2,2,1,2] y_tilde[2,2,1,3] y_tilde[2,2,1,4]
+ y_tilde[2,2,1,5] y_tilde[2,2,2,1] y_tilde[2,2,3,1] y_tilde[2,2,4,1]
+ y_tilde[2,2,5,1] lambda[1,1,0] lambda[1,1,1] lambda[1,1,2] lambda[1,1,3]
+ lambda[1,1,4] lambda[1,1,5] lambda[1,2,0] lambda[1,2,1] lambda[1,2,2]
+ lambda[1,2,3] lambda[1,2,4] lambda[1,2,5] lambda[2,1,0] lambda[2,1,1]
+ lambda[2,1,4] lambda[2,1,5] lambda[2,2,0] lambda[2,2,1] lambda[2,2,4]
+ lambda[2,2,5] varrho[1,1,0] varrho[1,1,1] varrho[1,1,2] varrho[1,1,3]
+ varrho[1,1,4] varrho[1,1,5] varrho[1,2,0] varrho[1,2,1] varrho[1,2,2]
+ varrho[1,2,3] varrho[1,2,4] varrho[1,2,5] varrho[2,1,0] varrho[2,1,1]
+ varrho[2,1,3] varrho[2,1,4] varrho[2,2,0] varrho[2,2,1] varrho[2,2,3]
+End
