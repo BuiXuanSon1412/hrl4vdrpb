@@ -7,8 +7,7 @@ B = [4, 5]
 C = L + B      
 N = [0] + C    
 K = [1, 2]    
-MaxTrips = 2 
-R = list(range(1, MaxTrips + 1))  
+R = list(range(1, len(N)))  
 
 Q = 100.0           
 Q_tilde = 20.0      
@@ -47,7 +46,7 @@ t_start = {i: 0 for i in N}
 t_end = {i: 500.0 for i in N}  
 
 w1 = 1.0   
-w2 = 0.0   
+w2 = 0.5  
 
 model = gp.Model('VRPBD')
 
@@ -86,11 +85,11 @@ for i in C:
 model.setObjective(w1 * cost + w2 * spanning_time, GRB.MINIMIZE)
 
 
-# 1 
+# 3 
 for i in C:
     model.addConstr(gp.quicksum(x[k, i] for k in K) + gp.quicksum(x_tilde[k, r, i] for k in K for r in R) == 1)
 
-# 2-3
+# 4-5
 for k in K:
     model.addConstr(gp.quicksum(y[k, 0, j] for j in C) == 1)
     model.addConstr(gp.quicksum(y[k, i, 0] for i in C) == 1)
@@ -100,7 +99,7 @@ for k in K:
         model.addConstr(gp.quicksum(y[k, j, i] for j in N if j != i) == x[k, i])
         model.addConstr(gp.quicksum(y[k, i, j] for j in N if j != i) == x[k, i])
 
-# 4-6
+# 6-8
 for k in K:
     for r in R:
         model.addConstr(gp.quicksum(lambda_var[k, r, i] for i in N) <= 1)
@@ -110,17 +109,18 @@ for k in K:
 for k in K:
     for r in R:
         for i in N:
-            model.addConstr(lambda_var[k, r, i] <= x[k, i])
-            model.addConstr(varrho[k, r, i] <= x[k, i])
+            for j in N:
+                model.addConstr(lambda_var[k, r, i] <= x[k, i])
+                model.addConstr(varrho[k, r, j] <= x[k, j])
 
-# 7
+# 9
 for k in K:
     for r in R:
         for i in N:
             for j in N:
-                model.addConstr(z[k, i] <= z[k, j] + M * (2 - lambda_var[k, r, i] - varrho[k, r, j]))
+                model.addConstr(z_tilde[k, r, i] <= z_tilde[k, r, j] + M * (2 - lambda_var[k, r, i] - varrho[k, r, j]))
 
-# 8-9
+# 10-11
 for k in K:
     for r in R:
         for i in C:
@@ -129,7 +129,7 @@ for k in K:
             model.addConstr(gp.quicksum(y_tilde[k, r, i, j] for j in N if j != i) + varrho[k, r, i] 
                 == x_tilde[k, r, i] + lambda_var[k, r, i])
 
-# 10-11
+# 12-13
 for k in K:
     for i in C:
         for j in C:
@@ -143,12 +143,12 @@ for k in K:
                 if i != j:
                     model.addConstr(z_tilde[k, r, i] - z_tilde[k, r, j] + 1 <= M * (1 - y_tilde[k, r, i, j]))
 
-# 12
+# 14
 for k in K:
     model.addConstr(p[k, 0] == gp.quicksum(q[u] * x[k, u] for u in C if q[u] > 0) +
                    gp.quicksum(q[u] * x_tilde[k, r, u] for u in C for r in R if q[u] > 0))
 
-# 13-15
+# 15-17
 for k in K:
     for i in N:
         for j in N:
@@ -160,9 +160,9 @@ for k in K:
 
 for k in K:
     for i in N:
-        model.addConstr(p[k, i] <= Q, name=f'truck_capacity_{k}_{i}')
+        model.addConstr(0 <= p[k, i] <= Q)
 
-# 16-23
+# 18-25
 for k in K:
     for r in R:
         for j in N:
@@ -174,7 +174,7 @@ for k in K:
             model.addConstr(Z_varrho[k, r, j] <= Q_tilde * varrho[k, r, j])
             model.addConstr(Z_varrho[k, r, j] >= p_tilde[k, r, j] - Q_tilde * (1 - varrho[k, r, j]))
 
-# 24-25
+# 26-27
 for k in K:
     for r in R:
         for i in N:
@@ -183,13 +183,13 @@ for k in K:
             model.addConstr(p_tilde[k, r, i] <= gp.quicksum(q[u] * x_tilde[k, r, u] for u in C if q[u] > 0) + 
                             M * (1 - lambda_var[k, r, i]))
 
-# 26-27
+# 28-29
 for k in K:
     for r in R:
         for j in N:
             model.addConstr(p_tilde[k, r, j] <= M * (1 - varrho[k, r, j]))
 
-# 28-29
+# 30-31
 for k in K:
     for r in R:
         for i in N:
@@ -199,13 +199,13 @@ for k in K:
                 model.addConstr(p_tilde[k, r, j] >= p_tilde[k, r, i] - q[j] * x_tilde[k, r, j] - 
                                 M * (1 - y_tilde[k, r, i, j]))
 
-# 30
+# 32
 for k in K:
     for r in R:
         for i in N:
-            model.addConstr(p_tilde[k, r, i] <= Q_tilde, name=f'drone_capacity_{k}_{r}_{i}')
+            model.addConstr(0 <= p_tilde[k, r, i] <= Q_tilde)
 
-# 31-33
+# 33-35
 for i in C:
     model.addConstr(xi[i] >= t_start[i])
 
@@ -217,21 +217,21 @@ for k in K:
     for i in N:
         model.addConstr(xi[i] >= a_tilde[k, i] + tau_l - M * (1 - gp.quicksum(x_tilde[k, r, i] for r in R)))
 
-# 34
+# 36
 for k in K:
     for i in N:
         for j in N:
             if i != j:
                 model.addConstr(a[k, j] >= b[k, i] + t[i][j] - M * (1 - y[k, i, j]))
 
-# 35
+# 37
 for k in K:
     for r in R:
         for i in N:
             for j in N:
                 model.addConstr(a_tilde[k, j] >= b_tilde[k, i] + tau_l + t_tilde[i][j] - M * (1 - y_tilde[k, r, i, j]))
 
-# 36-38
+# 38-40
 for k in K:
     for i in C:
         model.addConstr(b[k, i] >= xi[i] + s[i])
@@ -242,36 +242,36 @@ for k in K:
             model.addConstr(b[k, i] >= b_tilde[k, i] + tau_l - M * (1 - lambda_var[k, r, i]))
             model.addConstr(b[k, i] >= a_tilde[k, i] + tau_r - M * (1 - varrho[k, r, i]))
 
-# 39
+# 41
 for k in K:
     for r in R:
         for i in C:
-            model.addConstr(b_tilde[k, i] >= xi[i] + s[i] - M * (1 - x_tilde[k, r, i]) - 
+            model.addConstr(b_tilde[k, r, i] >= xi[i] + s[i] - M * (1 - x_tilde[k, r, i]) - 
                             M * lambda_var[k, r, i] - M * varrho[k, r, i])
-
-# 40-41
-for k in K:
-    for r in R:
-        for i in C:
-            model.addConstr(b_tilde[k, i] >= a[k, i] - M * (1 - lambda_var[k, r, i]))
-            model.addConstr(b_tilde[k, i] <= b[k, i] + M * (1 - lambda_var[k, r, i]))
 
 # 42-43
 for k in K:
     for r in R:
-        for j in N:
-            model.addConstr(a_tilde[k, j] + h[k, r, j] >= a[k, j] - M * (1 - varrho[k, r, j]))
-            model.addConstr(a_tilde[k, j] + h[k, r, j] + tau_r <= b[k, j] + M * (1 - varrho[k, r, j]))
+        for i in C:
+            model.addConstr(b_tilde[k, r, i] >= a[k, i] - M * (1 - lambda_var[k, r, i]))
+            model.addConstr(b_tilde[k, r, i] <= b[k, i] + M * (1 - lambda_var[k, r, i]))
 
-# 44-47
+# 44-45
+for k in K:
+    for r in R:
+        for j in N:
+            model.addConstr(a_tilde[k, r, j] + h[k, r, j] >= a[k, j] - M * (1 - varrho[k, r, j]))
+            model.addConstr(a_tilde[k, r, j] + h[k, r, j] + tau_r <= b[k, j] + M * (1 - varrho[k, r, j]))
+
+# 46-49
 for k in K:
     for r in R:
         for i in N:
-            model.addConstr(h[k, r, i] >= a[k, i] - a_tilde[k, i] - M * (1 - varrho[k, r, i]))
-            model.addConstr(h[k, r, i] >= xi[i] - a_tilde[k, i] - M * (1 - x_tilde[k, r, i]))
-            model.addConstr(h[k, r, i] <= xi[i] - a_tilde[k, i] + M * (1 - x_tilde[k, r, i]))
+            model.addConstr(h[k, r, i] >= a[k, i] - a_tilde[k, r, i] - M * (1 - varrho[k, r, i]))
+            model.addConstr(h[k, r, i] >= xi[i] - a_tilde[k, r, i] - M * (1 - x_tilde[k, r, i]))
+            model.addConstr(h[k, r, i] <= xi[i] - a_tilde[k, r, i] + M * (1 - x_tilde[k, r, i]))
 
-# 48
+# 50
 for k in K:
     for r in R:
         model.addConstr(gp.quicksum(y_tilde[k, r, i, j] * t_tilde[i][j] for i in C for j in C) +
