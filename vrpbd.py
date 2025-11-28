@@ -93,8 +93,8 @@ for k in K:
 # 6-8
 for k in K:
     for r in R:
-        model += pl.lpSum(lambda_var[k, r, i] for i in N) <= 1
-        model += pl.lpSum(varrho[k, r, j] for j in N) <= 1
+        model += pl.lpSum([lambda_var[k, r, i] for i in N]) <= 1
+        model += pl.lpSum([varrho[k, r, j] for j in N]) <= 1
         model += pl.lpSum([lambda_var[k, r, i] for i in N]) == pl.lpSum([x_tilde[k, r, i] for i in C])
         model += pl.lpSum([varrho[k, r, j] for j in N]) == pl.lpSum([x_tilde[k, r, i] for i in C])
 
@@ -140,7 +140,7 @@ for k in K:
 
 # 14
 for k in K:
-    initial_load = pl.lpSum([q[u] * x[k, u] for u in L])
+    initial_load = pl.lpSum([q[u] * x[k, u] for u in L]) + pl.lpSum([q[u] * x_tilde[k, r, u] for u in L for r in R]) 
     model += p[k, 0] == initial_load
 
 # 15-17
