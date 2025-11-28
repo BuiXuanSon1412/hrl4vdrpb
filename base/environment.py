@@ -21,7 +21,6 @@ class VehicleDroneRoutingEnv(gym.Env):
         drone_capacity: float = 10.0,
         drone_battery: float = 100.0,
         map_size: float = 100.0,
-        # NEW: Reward normalization parameters
         normalize_rewards: bool = True,
         cost_weight: float = 0.5,
         satisfaction_weight: float = 0.5,
