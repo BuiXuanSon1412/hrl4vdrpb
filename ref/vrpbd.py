@@ -1,46 +1,117 @@
 import pulp as pl
 import numpy as np
+import pandas as pd
+import os
+import sys
 
-L = [1, 2, 3, 4]  
-B = [5, 6]     
-C = L + B      
-N = [0] + C    
-K = [1, 2]    
-R = list(range(1, 3))  
+# L = [1, 2, 3, 4, 5, 6, 7]  
+# B = [8, 9, 10]     
+# C = L + B      
+# N = [0] + C    
+# K = [1, 2]    
+# R = list(range(1, 4))  
+
+# Q = 30.0           
+# Q_tilde = 20.0      
+# tau_l = 0.5    
+# tau_r = 0.5        
+# c = 1.0             
+# c_tilde = 0.2      
+# T_max = 500.0       
+# M = 10000.0         
+
+# np.random.seed(42)
+# n_nodes = len(N)
+# d = np.random.uniform(10, 50, (n_nodes, n_nodes))  
+# d_tilde = np.random.uniform(12, 60, (n_nodes, n_nodes))
+# np.fill_diagonal(d, 0)
+# np.fill_diagonal(d_tilde, 0)
+
+# t = d / 30.0  
+# t_tilde = d_tilde / 40.0  
+
+# q = {0: 0}
+# for i in L:
+#     q[i] = np.random.uniform(5, 10)  
+# for i in B:
+#     q[i] = -np.random.uniform(5, 10)  
+
+# s = {i: np.random.uniform(2, 5) for i in N}
+# s[0] = 0  
+
+# t_start = {i: 0 for i in N}
+# t_end = {i: 100.0 for i in N}  
+
+# w1 = 1.0   
+# w2 = 0.2
+
+data_path = "/hrl4vdrpb/data/VDRPBTW_N20.csv"
+
+df = pd.read_csv(data_path)
+
+print("Các cột trong CSV:")
+print(df.columns.tolist())
+print(df.head())
+
+# Depot là node đầu tiên (ID = 0)
+depot_idx = 0
+
+linehaul_indices = df[df['CUSTOMER_TYPE'] == 'Linehaul'].index.tolist()
+
+backhaul_indices = df[df['CUSTOMER_TYPE'] == 'Backhaul'].index.tolist()
+
+L = linehaul_indices  
+B = backhaul_indices  
+C = L + B             
+N = [depot_idx] + C   
+
+# Tạo ma trận khoảng cách từ X_COORD và Y_COORD
+n_nodes = len(df)
+d = np.zeros((n_nodes, n_nodes))
+d_tilde = np.zeros((n_nodes, n_nodes))
+
+for i in range(n_nodes):
+    for j in range(n_nodes):
+        if i != j:
+            xi, yi = df.loc[i, 'X_COORD'], df.loc[i, 'Y_COORD']
+            xj, yj = df.loc[j, 'X_COORD'], df.loc[j, 'Y_COORD']
+            d[i, j] = np.sqrt((xi - xj)**2 + (yi - yj)**2)
+            d_tilde[i, j] = d[i, j] * 1.2  
+
+# Thời gian di chuyển
+vehicle_speed = 1.0  
+drone_speed = 1.5    
+t = d / vehicle_speed
+t_tilde = d_tilde / drone_speed
+
+q = df['DEMAND'].to_dict()
+
+s = df['SERVICE_TIME'].to_dict()
+
+t_start = df['READY_TIME'].to_dict()
+t_end = df['DUE_TIME'].to_dict()
+
+T_max = df.loc[depot_idx, 'DUE_TIME']
 
 Q = 30.0           
-Q_tilde = 20.0      
-tau_l = 0.5      
-tau_r = 0.5         
-c = 1.0             
+Q_tilde = 20.0     
+
+tau_l = 0.5        
+tau_r = 0.5        
+
+c = 1.0            
 c_tilde = 0.2      
-T_max = 500.0       
-M = 10000.0         
+M = 10000.0        
 
-np.random.seed(42)
-n_nodes = len(N)
-d = np.random.uniform(10, 50, (n_nodes, n_nodes))  
-d_tilde = np.random.uniform(12, 60, (n_nodes, n_nodes))
-np.fill_diagonal(d, 0)
-np.fill_diagonal(d_tilde, 0)
+w1 = 1.0
+w2 = 0.2
 
-t = d / 30.0  
-t_tilde = d_tilde / 40.0  
+num_customers = len(C)
+num_vehicles = max(2, min(5, num_customers // 3 + 1))
+num_drone_routes = max(1, min(3, num_customers // 5 + 1))
 
-q = {0: 0}
-for i in L:
-    q[i] = np.random.uniform(8, 12)  
-for i in B:
-    q[i] = -np.random.uniform(8, 12)  
-
-s = {i: np.random.uniform(2, 5) for i in N}
-s[0] = 0  
-
-t_start = {i: 0 for i in N}
-t_end = {i: 500.0 for i in N}  
-
-w1 = 1.0   
-w2 = 0.1  
+K = list(range(1, num_vehicles + 1))  
+R = list(range(1, num_drone_routes + 1))  
 
 model = pl.LpProblem('VRPBD', pl.LpMinimize)
 
@@ -115,35 +186,53 @@ for k in K:
         for i in N:
             for j in N:
                 if i != j:
-                    model += z[k, i] + lambda_var[k, r, i] <= z[k, j] + M * (1 - varrho[k, r, j])
+                    model += z_tilde[k, r, i] <= z_tilde[k, r, j] + M * (1 - varrho[k, r, j])
 
-# 10-11
+# 10
 for k in K:
     for r in R:
-        for i in C:
-            model += pl.lpSum([y_tilde[k, r, j, i] for j in N if j != i]) + lambda_var[k, r, i] == x_tilde[k, r, i] + varrho[k, r, i]
-            model += pl.lpSum([y_tilde[k, r, i, j] for j in N if j != i]) + varrho[k, r, i] == x_tilde[k, r, i] + lambda_var[k, r, i]
+        for i in N:
+            model += pl.lpSum(y_tilde[k, r, j, i] for j in N if j != i)  - x_tilde[k, r, i] <= M * (lambda_var[k, r, i] + varrho[k, r, i])
+            model += pl.lpSum(y_tilde[k, r, j, i] for j in N if j != i)  - x_tilde[k, r, i] >= -M * (lambda_var[k, r, i] + varrho[k, r, i])
 
-# 12-13
+            model += pl.lpSum(y_tilde[k, r, i, j] for j in N if j != i)  - x_tilde[k, r, i] <= M * (lambda_var[k, r, i] + varrho[k, r, i])
+            model += pl.lpSum(y_tilde[k, r, i, j] for j in N if j != i)  - x_tilde[k, r, i] >= -M * (lambda_var[k, r, i] + varrho[k, r, i])
+
+# 11-12
+for k in K:
+    for r in R: 
+        for i in C:
+            model += lambda_var[k, r, i] <= pl.lpSum([y_tilde[k, r, i, j] for j in N if j != i])
+            model += lambda_var[k, r, i] >= x[k, i] + pl.lpSum([y_tilde[k, r, i, j] for j in N if j != i]) - 1
+
+
+# 13-14
+for k in K:
+    for r in R: 
+        for i in C:
+            model += varrho[k, r, i] <= pl.lpSum([y_tilde[k, r, j, i] for j in N if j != i])
+            model += varrho[k, r, i] >= x[k, i] + pl.lpSum([y_tilde[k, r, j, i] for j in N if j != i]) - 1
+
+# 15-16
 for k in K:
     for i in C:
         for j in C:
             if i != j:
-                model += z[k, i] - z[k, j] + 1 <= M * (1 - y[k, i, j])
+                model += (z[k, i] - z[k, j] + 1 <= M * (1 - y[k, i, j]))
 
 for k in K:
     for r in R:
         for i in C:
             for j in C:
                 if i != j:
-                    model += z_tilde[k, r, i] - z_tilde[k, r, j] + 1 <= M * (1 - y_tilde[k, r, i, j])
+                    model += (z_tilde[k, r, i] - z_tilde[k, r, j] + 1 <= M * (1 - y_tilde[k, r, i, j]))
 
-# 14
+# 17
 for k in K:
     initial_load = pl.lpSum([q[u] * x[k, u] for u in L]) + pl.lpSum([q[u] * x_tilde[k, r, u] for u in L for r in R]) 
     model += p[k, 0] == initial_load
 
-# 15-17
+# 18-19
 epsilon = 0.01
 for k in K:
     for i in N:
@@ -153,24 +242,24 @@ for k in K:
                 model += p[k, j] <= p[k, i] + load_change + M * (1 - y[k, i, j]) + epsilon
                 model += p[k, j] >= p[k, i] + load_change - M * (1 - y[k, i, j]) - epsilon
 
+# 20-30
 for k in K:
     for i in N:
         model += p[k, i] <= Q
         model += p[k, i] >= 0
 
-# 18-25
 for k in K:
     for r in R:
         for j in N:
-            model += Z_lambda[k, r, j] <= p_tilde[k, r, j]
+            model += Z_lambda[k, r, j] <= p_tilde[k, r, j] + Q_tilde * (1 - lambda_var[k, r, j])
             model += Z_lambda[k, r, j] <= Q_tilde * lambda_var[k, r, j]
             model += Z_lambda[k, r, j] >= p_tilde[k, r, j] - Q_tilde * (1 - lambda_var[k, r, j])
             
-            model += Z_varrho[k, r, j] <= p_tilde[k, r, j]
+            model += Z_varrho[k, r, j] <= p_tilde[k, r, j] + Q_tilde * (1 - varrho[k, r, j])
             model += Z_varrho[k, r, j] <= Q_tilde * varrho[k, r, j]
             model += Z_varrho[k, r, j] >= p_tilde[k, r, j] - Q_tilde * (1 - varrho[k, r, j])
 
-# 26-27
+# 31-32
 for k in K:
     for r in R:
         drone_pickup = pl.lpSum([q[u] * x_tilde[k, r, u] for u in L])
@@ -178,13 +267,13 @@ for k in K:
             model += p_tilde[k, r, i] <= drone_pickup + M * (1 - lambda_var[k, r, i])
             model += p_tilde[k, r, i] >= drone_pickup - M * (1 - lambda_var[k, r, i])
 
-# 28-29
+# 33-34
 for k in K:
     for r in R:
         for j in N:
             model += p_tilde[k, r, j] <= M * (1 - varrho[k, r, j])
 
-# 30-31
+# 35-36
 for k in K:
     for r in R:
         for i in N:
@@ -192,13 +281,13 @@ for k in K:
                 model += p_tilde[k, r, j] <= p_tilde[k, r, i] - q[j] * x_tilde[k, r, j] + M * (1 - y_tilde[k, r, i, j])
                 model += p_tilde[k, r, j] >= p_tilde[k, r, i] - q[j] * x_tilde[k, r, j] - M * (1 - y_tilde[k, r, i, j])
 
-# 32
+# 37
 for k in K:
     for r in R:
         for i in N:
             model += p_tilde[k, r, i] <= Q_tilde
 
-# 33-35
+# 38-40
 for i in C:
     model += xi[i] >= t_start[i]
 
@@ -207,27 +296,30 @@ for k in K:
         model += xi[i] >= a[k, i] - M * (1 - x[k, i])
 
 for k in K:
-    for i in C:
-        model += xi[i] >= a_tilde[k, i] + tau_l - M * (1 - pl.lpSum([x_tilde[k, r, i] for r in R]))
+    for r in R:
+        for i in C:
+            model += xi[i] >= a_tilde[k, i] + tau_r - M * (1 - x_tilde[k, r, i] )
 
-# 36
+# 41
 for k in K:
     for i in N:
         for j in C:
             if i != j:
-                model += a[k, j] >= b[k, i] + t[i][j] - M * (1 - y[k, i, j]) - epsilon
+                model += a[k, j] >= b[k, i] + t[i][j] - M * (1 - y[k, i, j]) 
+                model += a[k, j] <= b[k, i] + t[i][j] + M * (1 - y[k, i, j])
 
-# 37
+# 42
 for k in K:
     for r in R:
         for i in N:
             for j in C:
                 model += a_tilde[k, j] >= b_tilde[k, i] + tau_l + t_tilde[i][j] - M * (1 - y_tilde[k, r, i, j])
+                model += a_tilde[k, j] <= b_tilde[k, i] + tau_l + t_tilde[i][j] + M * (1 - y_tilde[k, r, i, j])
 
-# 38-40
+# 43-45
 for k in K:
     for i in C:
-        model += b[k, i] >= xi[i] + s[i] - M * (1 - x[k, i])
+        model += b[k, i] >= xi[i] + s[i] # - M * (1 - x[k, i])
 
 for k in K:
     for r in R:
@@ -235,27 +327,27 @@ for k in K:
             model += b[k, i] >= b_tilde[k, i] + tau_l - M * (1 - lambda_var[k, r, i])
             model += b[k, i] >= a_tilde[k, i] + tau_r - M * (1 - varrho[k, r, i])
 
-# 41
+# 46
 for k in K:
     for r in R:
         for i in C:
             model += b_tilde[k, i] >= xi[i] + s[i] - M * (1 - x_tilde[k, r, i]) - M * lambda_var[k, r, i] - M * varrho[k, r, i]
 
-# 42-43
+# 47-48
 for k in K:
     for r in R:
         for i in C:
             model += b_tilde[k, i] >= a[k, i] - M * (1 - lambda_var[k, r, i])
             model += b_tilde[k, i] <= b[k, i] + M * (1 - lambda_var[k, r, i])
 
-# 44-45
+# 49-50
 for k in K:
     for r in R:
         for j in N:
             model += a_tilde[k, j] + h[k, r, j] >= a[k, j] - M * (1 - varrho[k, r, j])
             model += a_tilde[k, j] + h[k, r, j] + tau_r <= b[k, j] + M * (1 - varrho[k, r, j])
 
-# 46-49
+# 51-54
 for k in K:
     for r in R:
         for i in N:
@@ -264,7 +356,7 @@ for k in K:
             model += h[k, r, i] <= xi[i] - a_tilde[k, i] + M * (1 - x_tilde[k, r, i])
             model += h[k, r, i] >= 0
 
-# 50
+# 55
 for k in K:
     for r in R:
         flight_time = pl.lpSum([y_tilde[k, r, i, j] * t_tilde[i][j] for i in C for j in C if i != j])
@@ -279,7 +371,7 @@ for k in K:
 print(f"Model created with {len(model.variables())} variables and {len(model.constraints)} constraints")
 print("\nSolving the model")
 
-solver = pl.PULP_CBC_CMD(timeLimit=600, gapRel=0.05, msg=1)
+solver = pl.PULP_CBC_CMD(timeLimit=36000, gapRel=0.05, msg=1)
 
 model.solve(solver)
 
