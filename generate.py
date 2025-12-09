@@ -1,6 +1,7 @@
 from rl.problem import generate_solomon_like_vrpbtw
 import os
 
+
 CUSTOMER_SIZES = [20, 50, 100, 150]
 OUTPUT_FOLDER = "data"
 print("Generating VRPBTW Datasets")
