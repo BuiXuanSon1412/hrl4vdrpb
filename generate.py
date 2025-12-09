@@ -1,16 +1,16 @@
-from base.problem import generate_solomon_like_vrpbtw
+from rl.problem import generate_solomon_like_vrpbtw
 import os
 
 CUSTOMER_SIZES = [20, 50, 100, 150]
 OUTPUT_FOLDER = "data"
-print("Generating VDRPBTW Datasets")
+print("Generating VRPBTW Datasets")
 
 dataset_df = None
 
 for N in CUSTOMER_SIZES:
     # We will use T_max = 10.0 and speed_factor = 1.0 for consistency
     dataset_df = generate_solomon_like_vrpbtw(N, T_max=10.0, speed_factor=1.0)
-    output_filename = f"VDRPBTW_N{N}.csv"
+    output_filename = f"VRPBTW_N{N}.csv"
 
     output_path = os.path.join(OUTPUT_FOLDER, output_filename)
     dataset_df.to_csv(output_path, index=False)
