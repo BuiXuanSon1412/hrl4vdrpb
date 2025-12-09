@@ -49,7 +49,7 @@ class Drone:
     y: float
 
 
-def generate_solomon_like_vrpbtw(num_customers, T_max=10.0, speed_factor=1.0):
+def generate_random_data(num_customers, T_max=10.0, speed_factor=1.0):
     """
     Generates a VRPBTW instance using Solomon's structure for time windows.
 
