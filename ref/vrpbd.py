@@ -158,8 +158,8 @@ for k in K:
 
 for k in K:
     for i in C:
-        model += pl.lpSum([y[k, j, i] for j in N if j != i]) == x[k, i], f'flow_in_k{k}_i{i}'
-        model += pl.lpSum([y[k, i, j] for j in N if j != i]) == x[k, i], f'flow_out_k{k}_i{i}'
+        model += pl.lpSum([y[k, j, i] for j in N if j != i]) == x[k, i]
+        model += pl.lpSum([y[k, i, j] for j in N if j != i]) == x[k, i]
 
 # 6-8
 for k in K:
