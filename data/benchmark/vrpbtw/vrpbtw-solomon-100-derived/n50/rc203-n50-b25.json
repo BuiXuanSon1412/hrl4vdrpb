@@ -1,0 +1,467 @@
+{
+    "instance": "rc203-n50-b25",
+    "base": "rc203",
+    "num_vehicle": 25,
+    "capacity": 1000,
+    "n_customers": 50,
+    "n_backhaul": 25,
+    "depot": {
+        "x": 40,
+        "y": 50,
+        "ready_time": 0,
+        "due_date": 960,
+        "service_time": 0
+    },
+    "customers": [
+        {
+            "id": 1,
+            "x": 25,
+            "y": 85,
+            "demand": 20,
+            "ready_time": 0,
+            "due_date": 911,
+            "service_time": 10
+        },
+        {
+            "id": 2,
+            "x": 22,
+            "y": 75,
+            "demand": 30,
+            "ready_time": 0,
+            "due_date": 919,
+            "service_time": 10
+        },
+        {
+            "id": 3,
+            "x": 22,
+            "y": 85,
+            "demand": 10,
+            "ready_time": 0,
+            "due_date": 910,
+            "service_time": 10
+        },
+        {
+            "id": 4,
+            "x": 20,
+            "y": 80,
+            "demand": 40,
+            "ready_time": 644,
+            "due_date": 764,
+            "service_time": 10
+        },
+        {
+            "id": 5,
+            "x": 20,
+            "y": 85,
+            "demand": 20,
+            "ready_time": 0,
+            "due_date": 909,
+            "service_time": 10
+        },
+        {
+            "id": 6,
+            "x": 18,
+            "y": 75,
+            "demand": 20,
+            "ready_time": 388,
+            "due_date": 508,
+            "service_time": 10
+        },
+        {
+            "id": 7,
+            "x": 15,
+            "y": 75,
+            "demand": 20,
+            "ready_time": 0,
+            "due_date": 914,
+            "service_time": 10
+        },
+        {
+            "id": 8,
+            "x": 15,
+            "y": 80,
+            "demand": 10,
+            "ready_time": 367,
+            "due_date": 487,
+            "service_time": 10
+        },
+        {
+            "id": 9,
+            "x": 10,
+            "y": 35,
+            "demand": 20,
+            "ready_time": 371,
+            "due_date": 491,
+            "service_time": 10
+        },
+        {
+            "id": 10,
+            "x": 10,
+            "y": 40,
+            "demand": 30,
+            "ready_time": 519,
+            "due_date": 639,
+            "service_time": 10
+        },
+        {
+            "id": 11,
+            "x": 8,
+            "y": 40,
+            "demand": 40,
+            "ready_time": 195,
+            "due_date": 315,
+            "service_time": 10
+        },
+        {
+            "id": 12,
+            "x": 8,
+            "y": 45,
+            "demand": 20,
+            "ready_time": 0,
+            "due_date": 917,
+            "service_time": 10
+        },
+        {
+            "id": 13,
+            "x": 5,
+            "y": 35,
+            "demand": 10,
+            "ready_time": 653,
+            "due_date": 773,
+            "service_time": 10
+        },
+        {
+            "id": 14,
+            "x": 5,
+            "y": 45,
+            "demand": 10,
+            "ready_time": 0,
+            "due_date": 914,
+            "service_time": 10
+        },
+        {
+            "id": 15,
+            "x": 2,
+            "y": 40,
+            "demand": 20,
+            "ready_time": 174,
+            "due_date": 294,
+            "service_time": 10
+        },
+        {
+            "id": 16,
+            "x": 0,
+            "y": 40,
+            "demand": 20,
+            "ready_time": 0,
+            "due_date": 908,
+            "service_time": 10
+        },
+        {
+            "id": 17,
+            "x": 0,
+            "y": 45,
+            "demand": 20,
+            "ready_time": 703,
+            "due_date": 823,
+            "service_time": 10
+        },
+        {
+            "id": 18,
+            "x": 44,
+            "y": 5,
+            "demand": 20,
+            "ready_time": 0,
+            "due_date": 904,
+            "service_time": 10
+        },
+        {
+            "id": 19,
+            "x": 42,
+            "y": 10,
+            "demand": 40,
+            "ready_time": 0,
+            "due_date": 909,
+            "service_time": 10
+        },
+        {
+            "id": 20,
+            "x": 42,
+            "y": 15,
+            "demand": 10,
+            "ready_time": 0,
+            "due_date": 914,
+            "service_time": 10
+        },
+        {
+            "id": 21,
+            "x": 40,
+            "y": 5,
+            "demand": 10,
+            "ready_time": 0,
+            "due_date": 905,
+            "service_time": 10
+        },
+        {
+            "id": 22,
+            "x": 40,
+            "y": 15,
+            "demand": 40,
+            "ready_time": 375,
+            "due_date": 495,
+            "service_time": 10
+        },
+        {
+            "id": 23,
+            "x": 38,
+            "y": 5,
+            "demand": 30,
+            "ready_time": 201,
+            "due_date": 321,
+            "service_time": 10
+        },
+        {
+            "id": 24,
+            "x": 38,
+            "y": 15,
+            "demand": 10,
+            "ready_time": 0,
+            "due_date": 914,
+            "service_time": 10
+        },
+        {
+            "id": 25,
+            "x": 35,
+            "y": 5,
+            "demand": 20,
+            "ready_time": 784,
+            "due_date": 904,
+            "service_time": 10
+        },
+        {
+            "id": 26,
+            "x": 95,
+            "y": 30,
+            "demand": -30,
+            "ready_time": 0,
+            "due_date": 891,
+            "service_time": 10
+        },
+        {
+            "id": 27,
+            "x": 95,
+            "y": 35,
+            "demand": -20,
+            "ready_time": 146,
+            "due_date": 266,
+            "service_time": 10
+        },
+        {
+            "id": 28,
+            "x": 92,
+            "y": 30,
+            "demand": -10,
+            "ready_time": 0,
+            "due_date": 894,
+            "service_time": 10
+        },
+        {
+            "id": 29,
+            "x": 90,
+            "y": 35,
+            "demand": -10,
+            "ready_time": 0,
+            "due_date": 897,
+            "service_time": 10
+        },
+        {
+            "id": 30,
+            "x": 88,
+            "y": 30,
+            "demand": -10,
+            "ready_time": 246,
+            "due_date": 366,
+            "service_time": 10
+        },
+        {
+            "id": 31,
+            "x": 88,
+            "y": 35,
+            "demand": -20,
+            "ready_time": 0,
+            "due_date": 899,
+            "service_time": 10
+        },
+        {
+            "id": 32,
+            "x": 87,
+            "y": 30,
+            "demand": -10,
+            "ready_time": 0,
+            "due_date": 898,
+            "service_time": 10
+        },
+        {
+            "id": 33,
+            "x": 85,
+            "y": 25,
+            "demand": -10,
+            "ready_time": 80,
+            "due_date": 200,
+            "service_time": 10
+        },
+        {
+            "id": 34,
+            "x": 85,
+            "y": 35,
+            "demand": -30,
+            "ready_time": 0,
+            "due_date": 902,
+            "service_time": 10
+        },
+        {
+            "id": 35,
+            "x": 67,
+            "y": 85,
+            "demand": -20,
+            "ready_time": 657,
+            "due_date": 777,
+            "service_time": 10
+        },
+        {
+            "id": 36,
+            "x": 65,
+            "y": 85,
+            "demand": -40,
+            "ready_time": 43,
+            "due_date": 163,
+            "service_time": 10
+        },
+        {
+            "id": 37,
+            "x": 65,
+            "y": 82,
+            "demand": -10,
+            "ready_time": 0,
+            "due_date": 909,
+            "service_time": 10
+        },
+        {
+            "id": 38,
+            "x": 62,
+            "y": 80,
+            "demand": -30,
+            "ready_time": 278,
+            "due_date": 398,
+            "service_time": 10
+        },
+        {
+            "id": 39,
+            "x": 60,
+            "y": 80,
+            "demand": -10,
+            "ready_time": 64,
+            "due_date": 184,
+            "service_time": 10
+        },
+        {
+            "id": 40,
+            "x": 60,
+            "y": 85,
+            "demand": -30,
+            "ready_time": 329,
+            "due_date": 449,
+            "service_time": 10
+        },
+        {
+            "id": 41,
+            "x": 58,
+            "y": 75,
+            "demand": -20,
+            "ready_time": 376,
+            "due_date": 496,
+            "service_time": 10
+        },
+        {
+            "id": 42,
+            "x": 55,
+            "y": 80,
+            "demand": -10,
+            "ready_time": 33,
+            "due_date": 153,
+            "service_time": 10
+        },
+        {
+            "id": 43,
+            "x": 55,
+            "y": 85,
+            "demand": -20,
+            "ready_time": 0,
+            "due_date": 911,
+            "service_time": 10
+        },
+        {
+            "id": 44,
+            "x": 55,
+            "y": 82,
+            "demand": -10,
+            "ready_time": 217,
+            "due_date": 337,
+            "service_time": 10
+        },
+        {
+            "id": 45,
+            "x": 20,
+            "y": 82,
+            "demand": -10,
+            "ready_time": 37,
+            "due_date": 157,
+            "service_time": 10
+        },
+        {
+            "id": 46,
+            "x": 18,
+            "y": 80,
+            "demand": -10,
+            "ready_time": 0,
+            "due_date": 912,
+            "service_time": 10
+        },
+        {
+            "id": 47,
+            "x": 2,
+            "y": 45,
+            "demand": -10,
+            "ready_time": 0,
+            "due_date": 911,
+            "service_time": 10
+        },
+        {
+            "id": 48,
+            "x": 42,
+            "y": 5,
+            "demand": -10,
+            "ready_time": 0,
+            "due_date": 904,
+            "service_time": 10
+        },
+        {
+            "id": 49,
+            "x": 42,
+            "y": 12,
+            "demand": -10,
+            "ready_time": 440,
+            "due_date": 560,
+            "service_time": 10
+        },
+        {
+            "id": 50,
+            "x": 72,
+            "y": 35,
+            "demand": -30,
+            "ready_time": 0,
+            "due_date": 914,
+            "service_time": 10
+        }
+    ]
+}

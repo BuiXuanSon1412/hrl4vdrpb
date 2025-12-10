@@ -1,0 +1,107 @@
+{
+    "instance": "r107-n10-b4",
+    "base": "r107",
+    "num_vehicle": 25,
+    "capacity": 200,
+    "n_customers": 10,
+    "n_backhaul": 4,
+    "depot": {
+        "x": 35,
+        "y": 35,
+        "ready_time": 0,
+        "due_date": 230,
+        "service_time": 0
+    },
+    "customers": [
+        {
+            "id": 1,
+            "x": 41,
+            "y": 49,
+            "demand": 10,
+            "ready_time": 0,
+            "due_date": 204,
+            "service_time": 10
+        },
+        {
+            "id": 2,
+            "x": 35,
+            "y": 17,
+            "demand": 7,
+            "ready_time": 0,
+            "due_date": 202,
+            "service_time": 10
+        },
+        {
+            "id": 3,
+            "x": 55,
+            "y": 45,
+            "demand": 13,
+            "ready_time": 0,
+            "due_date": 197,
+            "service_time": 10
+        },
+        {
+            "id": 4,
+            "x": 55,
+            "y": 20,
+            "demand": 19,
+            "ready_time": 139,
+            "due_date": 169,
+            "service_time": 10
+        },
+        {
+            "id": 5,
+            "x": 15,
+            "y": 30,
+            "demand": 26,
+            "ready_time": 0,
+            "due_date": 199,
+            "service_time": 10
+        },
+        {
+            "id": 6,
+            "x": 25,
+            "y": 30,
+            "demand": 3,
+            "ready_time": 89,
+            "due_date": 119,
+            "service_time": 10
+        },
+        {
+            "id": 7,
+            "x": 20,
+            "y": 50,
+            "demand": -5,
+            "ready_time": 0,
+            "due_date": 198,
+            "service_time": 10
+        },
+        {
+            "id": 8,
+            "x": 10,
+            "y": 43,
+            "demand": -9,
+            "ready_time": 85,
+            "due_date": 115,
+            "service_time": 10
+        },
+        {
+            "id": 9,
+            "x": 55,
+            "y": 60,
+            "demand": -16,
+            "ready_time": 87,
+            "due_date": 117,
+            "service_time": 10
+        },
+        {
+            "id": 10,
+            "x": 30,
+            "y": 60,
+            "demand": -16,
+            "ready_time": 114,
+            "due_date": 144,
+            "service_time": 10
+        }
+    ]
+}
