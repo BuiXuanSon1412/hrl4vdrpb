@@ -1,0 +1,242 @@
+{
+    "instance": "rc105-n25-b12",
+    "base": "rc105",
+    "num_vehicle": 25,
+    "capacity": 200,
+    "n_customers": 25,
+    "n_backhaul": 12,
+    "depot": {
+        "x": 40,
+        "y": 50,
+        "ready_time": 0,
+        "due_date": 240,
+        "service_time": 0
+    },
+    "customers": [
+        {
+            "id": 1,
+            "x": 25,
+            "y": 85,
+            "demand": 20,
+            "ready_time": 71,
+            "due_date": 191,
+            "service_time": 10
+        },
+        {
+            "id": 2,
+            "x": 22,
+            "y": 75,
+            "demand": 30,
+            "ready_time": 30,
+            "due_date": 150,
+            "service_time": 10
+        },
+        {
+            "id": 3,
+            "x": 22,
+            "y": 85,
+            "demand": 10,
+            "ready_time": 64,
+            "due_date": 184,
+            "service_time": 10
+        },
+        {
+            "id": 4,
+            "x": 20,
+            "y": 80,
+            "demand": 40,
+            "ready_time": 151,
+            "due_date": 161,
+            "service_time": 10
+        },
+        {
+            "id": 5,
+            "x": 20,
+            "y": 85,
+            "demand": 20,
+            "ready_time": 40,
+            "due_date": 160,
+            "service_time": 10
+        },
+        {
+            "id": 6,
+            "x": 18,
+            "y": 75,
+            "demand": 20,
+            "ready_time": 96,
+            "due_date": 123,
+            "service_time": 10
+        },
+        {
+            "id": 7,
+            "x": 15,
+            "y": 75,
+            "demand": 20,
+            "ready_time": 35,
+            "due_date": 155,
+            "service_time": 10
+        },
+        {
+            "id": 8,
+            "x": 15,
+            "y": 80,
+            "demand": 10,
+            "ready_time": 101,
+            "due_date": 111,
+            "service_time": 10
+        },
+        {
+            "id": 9,
+            "x": 10,
+            "y": 35,
+            "demand": 20,
+            "ready_time": 101,
+            "due_date": 111,
+            "service_time": 10
+        },
+        {
+            "id": 10,
+            "x": 10,
+            "y": 40,
+            "demand": 30,
+            "ready_time": 123,
+            "due_date": 144,
+            "service_time": 10
+        },
+        {
+            "id": 11,
+            "x": 8,
+            "y": 40,
+            "demand": 40,
+            "ready_time": 69,
+            "due_date": 79,
+            "service_time": 10
+        },
+        {
+            "id": 12,
+            "x": 8,
+            "y": 45,
+            "demand": 20,
+            "ready_time": 32,
+            "due_date": 152,
+            "service_time": 10
+        },
+        {
+            "id": 13,
+            "x": 5,
+            "y": 35,
+            "demand": 10,
+            "ready_time": 152,
+            "due_date": 162,
+            "service_time": 10
+        },
+        {
+            "id": 14,
+            "x": 5,
+            "y": 45,
+            "demand": -10,
+            "ready_time": 35,
+            "due_date": 117,
+            "service_time": 10
+        },
+        {
+            "id": 15,
+            "x": 2,
+            "y": 40,
+            "demand": -20,
+            "ready_time": 68,
+            "due_date": 78,
+            "service_time": 10
+        },
+        {
+            "id": 16,
+            "x": 0,
+            "y": 40,
+            "demand": -20,
+            "ready_time": 59,
+            "due_date": 114,
+            "service_time": 10
+        },
+        {
+            "id": 17,
+            "x": 0,
+            "y": 45,
+            "demand": -20,
+            "ready_time": 147,
+            "due_date": 180,
+            "service_time": 10
+        },
+        {
+            "id": 18,
+            "x": 44,
+            "y": 5,
+            "demand": -20,
+            "ready_time": 79,
+            "due_date": 124,
+            "service_time": 10
+        },
+        {
+            "id": 19,
+            "x": 42,
+            "y": 10,
+            "demand": -40,
+            "ready_time": 58,
+            "due_date": 115,
+            "service_time": 10
+        },
+        {
+            "id": 20,
+            "x": 42,
+            "y": 15,
+            "demand": -10,
+            "ready_time": 111,
+            "due_date": 162,
+            "service_time": 10
+        },
+        {
+            "id": 21,
+            "x": 40,
+            "y": 5,
+            "demand": -10,
+            "ready_time": 45,
+            "due_date": 165,
+            "service_time": 10
+        },
+        {
+            "id": 22,
+            "x": 40,
+            "y": 15,
+            "demand": -40,
+            "ready_time": 94,
+            "due_date": 119,
+            "service_time": 10
+        },
+        {
+            "id": 23,
+            "x": 38,
+            "y": 5,
+            "demand": -30,
+            "ready_time": 75,
+            "due_date": 85,
+            "service_time": 10
+        },
+        {
+            "id": 24,
+            "x": 38,
+            "y": 15,
+            "demand": -10,
+            "ready_time": 128,
+            "due_date": 194,
+            "service_time": 10
+        },
+        {
+            "id": 25,
+            "x": 35,
+            "y": 5,
+            "demand": -20,
+            "ready_time": 171,
+            "due_date": 181,
+            "service_time": 10
+        }
+    ]
+}

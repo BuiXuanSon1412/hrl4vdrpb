@@ -9,7 +9,7 @@ import shutil
 SOLOMON_ROOT = "benchmark/vrptw/vrptw-solomon-100"
 VRPBTW_ROOT = "benchmark/vrpbtw/vrpbtw-solomon-100-derived"
 
-TARGET_SIZES = [10, 15, 20, 50, 100]
+TARGET_SIZES = [10, 15, 20, 25, 50, 100]
 
 # (Linehaul %, Backhaul %) – backhaul % is not used directly but kept for readability
 RATIOS = [
