@@ -5,7 +5,7 @@ import os
 import sys
 
 
-data_path = "E:/bkai/VRPB/hrl4vdrpbtw/data/benchmark/vrpbtw-solomon-100-derived/n15/c101-n15-b4-k25.csv"
+data_path = "/hrl4vdrpbtw/data/benchmark/vrpbtw-solomon-100-derived/n15/c101-n15-b4-k25.csv"
 
 df = pd.read_csv(data_path)
 
