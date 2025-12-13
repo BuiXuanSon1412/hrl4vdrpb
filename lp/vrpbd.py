@@ -4,48 +4,8 @@ import pandas as pd
 import os
 import sys
 
-# L = [1, 2, 3, 4, 5, 6, 7]  
-# B = [8, 9, 10]     
-# C = L + B      
-# N = [0] + C    
-# K = [1, 2]    
-# R = list(range(1, 4))  
 
-# Q = 30.0           
-# Q_tilde = 20.0      
-# tau_l = 0.5    
-# tau_r = 0.5        
-# c = 1.0             
-# c_tilde = 0.2      
-# T_max = 500.0       
-# M = 10000.0         
-
-# np.random.seed(42)
-# n_nodes = len(N)
-# d = np.random.uniform(10, 50, (n_nodes, n_nodes))  
-# d_tilde = np.random.uniform(12, 60, (n_nodes, n_nodes))
-# np.fill_diagonal(d, 0)
-# np.fill_diagonal(d_tilde, 0)
-
-# t = d / 30.0  
-# t_tilde = d_tilde / 40.0  
-
-# q = {0: 0}
-# for i in L:
-#     q[i] = np.random.uniform(5, 10)  
-# for i in B:
-#     q[i] = -np.random.uniform(5, 10)  
-
-# s = {i: np.random.uniform(2, 5) for i in N}
-# s[0] = 0  
-
-# t_start = {i: 0 for i in N}
-# t_end = {i: 100.0 for i in N}  
-
-# w1 = 1.0   
-# w2 = 0.2
-
-data_path = "/hrl4vdrpb/data/VDRPBTW_N20.csv"
+data_path = "E:/bkai/VRPB/hrl4vdrpbtw/data/benchmark/vrpbtw-solomon-100-derived/n15/c101-n15-b4-k25.csv"
 
 df = pd.read_csv(data_path)
 
@@ -56,16 +16,16 @@ print(df.head())
 # Depot là node đầu tiên (ID = 0)
 depot_idx = 0
 
-linehaul_indices = df[df['CUSTOMER_TYPE'] == 'Linehaul'].index.tolist()
+linehaul_indices = df[df['DEMAND'] > 0].index.tolist()
 
-backhaul_indices = df[df['CUSTOMER_TYPE'] == 'Backhaul'].index.tolist()
+backhaul_indices = df[df['DEMAND'] < 0].index.tolist()
 
 L = linehaul_indices  
 B = backhaul_indices  
 C = L + B             
 N = [depot_idx] + C   
 
-# Tạo ma trận khoảng cách từ X_COORD và Y_COORD
+# Tạo ma trận khoảng cách từ XCOORD và YCOORD
 n_nodes = len(df)
 d = np.zeros((n_nodes, n_nodes))
 d_tilde = np.zeros((n_nodes, n_nodes))
@@ -73,8 +33,8 @@ d_tilde = np.zeros((n_nodes, n_nodes))
 for i in range(n_nodes):
     for j in range(n_nodes):
         if i != j:
-            xi, yi = df.loc[i, 'X_COORD'], df.loc[i, 'Y_COORD']
-            xj, yj = df.loc[j, 'X_COORD'], df.loc[j, 'Y_COORD']
+            xi, yi = df.loc[i, 'XCOORD.'], df.loc[i, 'YCOORD.']
+            xj, yj = df.loc[j, 'XCOORD.'], df.loc[j, 'YCOORD.']
             d[i, j] = np.sqrt((xi - xj)**2 + (yi - yj)**2)
             d_tilde[i, j] = d[i, j] * 1.2  
 
@@ -86,18 +46,18 @@ t_tilde = d_tilde / drone_speed
 
 q = df['DEMAND'].to_dict()
 
-s = df['SERVICE_TIME'].to_dict()
+s = df['SERVICE TIME'].to_dict()
 
-t_start = df['READY_TIME'].to_dict()
-t_end = df['DUE_TIME'].to_dict()
+t_start = df['READY TIME'].to_dict()
+t_end = df['DUE DATE'].to_dict()
 
-T_max = df.loc[depot_idx, 'DUE_TIME']
+T_max = df.loc[depot_idx, 'DUE DATE']
 
-Q = 30.0           
-Q_tilde = 20.0     
+Q = 200.0          
+Q_tilde = 50.0     
 
-tau_l = 0.5        
-tau_r = 0.5        
+tau_l = 5.0        
+tau_r = 5.0        
 
 c = 1.0            
 c_tilde = 0.2      
@@ -175,10 +135,6 @@ for k in K:
             model += lambda_var[k, r, i] <= x[k, i]
             model += varrho[k, r, i] <= x[k, i]
 
-for k in K:
-    for r in R:
-        model += lambda_var[k, r, 0] <= 1
-        model += varrho[k, r, 0] <= 1
 
 # 9
 for k in K:
