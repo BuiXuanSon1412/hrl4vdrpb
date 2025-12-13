@@ -130,14 +130,14 @@ def generate_vrpbtw_data(
     full_demands = np.insert(demands, 0, 0)
 
     # Tính T_max
-    dist_0_i = np.linalg.norm(coords[1:] - coords[0], axis=1)
-    D_max = np.max(dist_0_i) * 2
+    dist_0_i = np.linalg.norm(coords[1:] - coords[0], ord=1, axis=1)
+    D_max = np.sum(dist_0_i) * 2
     T_max = D_max / V_TRUCK
 
     time_windows = np.zeros((num_nodes, 2))
     time_windows[0] = [0.0, T_max]
-    T_max_per_truck = T_max / num_vehicles
-
+    # T_max_per_truck = T_max / num_vehicles
+    T_max_per_truck = 24.0  # keep lower bound in a day
     customer_nodes = []
     for i in range(1, num_nodes):
         Delta_i = (np.linalg.norm(coords[i] - coords[0]) * 2) / V_TRUCK
@@ -177,6 +177,7 @@ def generate_vrpbtw_data(
                 "CAPACITY_DRONE": int(CAPACITY_DRONE),
                 "DRONE_TAKEOFF_MIN": config["DRONE_TAKEOFF_MIN"],
                 "DRONE_LANDING_MIN": config["DRONE_LANDING_MIN"],
+                "SERVICE_TIME_MIN": config["SERVICE_TIME_MIN"],
             },
             "Depot": {
                 "id": 0,
@@ -290,14 +291,14 @@ if __name__ == "__main__":
     parser.add_argument(
         "--output_dir",
         type=str,
-        default="",
+        default="data",
         help="Thư mục gốc lưu trữ dữ liệu. (Mặc định: generated)",
     )
 
     parser.add_argument(
         "--seed_start",
         type=int,
-        default=42,
+        default=101,
         help="Seed ngẫu nhiên bắt đầu. Sau mỗi instance sẽ tăng lên 1. Mặc định: 42",
     )
     parser.add_argument(
