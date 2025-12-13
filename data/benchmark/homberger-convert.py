@@ -4,8 +4,8 @@ import math
 import json
 import shutil
 
-SOLOMON_ROOT = "benchmark/vrptw/vrptw-homberger-200"
-VRPBTW_ROOT = "benchmark/vrpbtw/vrpbtw-homberger-200-derived"
+SOLOMON_ROOT = "vrptw/vrptw-homberger-200"
+VRPBTW_ROOT = "vrpbtw/vrpbtw-homberger-200-derived"
 
 TARGET_SIZES = [150, 200]
 RATIOS = [(50, 50), (60, 40), (70, 30)]

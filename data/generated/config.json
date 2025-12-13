@@ -1,0 +1,24 @@
+{
+    "MAX_COORD": 100,
+    "V_TRUCK_KM_H": 40.0,
+    "V_DRONE_KM_H": 60.0,
+    "DRONE_TAKEOFF_MIN": 1.0,
+    "DRONE_LANDING_MIN": 1.0,
+    "CAPACITY_MAP": {
+        "SMALL": 200,
+        "LARGE": 1000,
+        "THRESHOLD": 50
+    },
+    "CAPACITY_DRONE": 50,
+    "DEMAND_RANGE_BACKHAUL": [-50, -1],
+    "DEMAND_RANGE_LINEHAUL": [1, 50],
+    "TIME_WINDOW_SCALING_FACTOR": 1.5,
+    "FLEET_SIZES": {
+        "10": 2,
+        "20": 4,
+        "50": 10,
+        "100": 10,
+        "150": 15,
+        "200": 20
+    }
+}

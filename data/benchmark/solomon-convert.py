@@ -6,8 +6,8 @@ import shutil
 
 
 # --- Configuration ---
-SOLOMON_ROOT = "benchmark/vrptw/vrptw-solomon-100"
-VRPBTW_ROOT = "benchmark/vrpbtw/vrpbtw-solomon-100-derived"
+SOLOMON_ROOT = "vrptw/vrptw-solomon-100"
+VRPBTW_ROOT = "vrpbtw/vrpbtw-solomon-100-derived"
 
 TARGET_SIZES = [10, 15, 20, 25, 50, 100]
 
