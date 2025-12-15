@@ -3,76 +3,7 @@ import numpy as np
 import pandas as pd
 import os
 import sys
-import json
-
-
-# data_path = "E:/bkai/VRPB/hrl4vdrpbtw/data/benchmark/vrpbtw-solomon-100-derived/n15/c101-n15-b4-k25.csv"
-
-# df = pd.read_csv(data_path)
-
-# print("Các cột trong CSV:")
-# print(df.columns.tolist())
-# print(df.head())
-
-# # Depot là node đầu tiên (ID = 0)
-# depot_idx = 0
-
-# linehaul_indices = df[df['DEMAND'] > 0].index.tolist()
-
-# backhaul_indices = df[df['DEMAND'] < 0].index.tolist()
-
-# L = linehaul_indices  
-# B = backhaul_indices  
-# C = L + B             
-# N = [depot_idx] + C   
-
-# # Tạo ma trận khoảng cách từ XCOORD và YCOORD
-# n_nodes = len(df)
-# d = np.zeros((n_nodes, n_nodes))
-# d_tilde = np.zeros((n_nodes, n_nodes))
-
-# for i in range(n_nodes):
-#     for j in range(n_nodes):
-#         if i != j:
-#             xi, yi = df.loc[i, 'XCOORD.'], df.loc[i, 'YCOORD.']
-#             xj, yj = df.loc[j, 'XCOORD.'], df.loc[j, 'YCOORD.']
-#             d[i, j] = np.sqrt((xi - xj)**2 + (yi - yj)**2)
-#             d_tilde[i, j] = d[i, j] * 1.2  
-
-# # Thời gian di chuyển
-# vehicle_speed = 1.0  
-# drone_speed = 1.5    
-# t = d / vehicle_speed
-# t_tilde = d_tilde / drone_speed
-
-# q = df['DEMAND'].to_dict()
-
-# s = df['SERVICE TIME'].to_dict()
-
-# t_start = df['READY TIME'].to_dict()
-# t_end = df['DUE DATE'].to_dict()
-
-# T_max = df.loc[depot_idx, 'DUE DATE']
-
-# Q = 200.0          
-# Q_tilde = 50.0     
-
-# tau_l = 5.0        
-# tau_r = 5.0        
-
-# c = 1.0            
-# c_tilde = 0.2      
-# M = 10000.0        
-
-# w1 = 1.0
-# w2 = 0.2
-
-# num_customers = len(C)
-# num_vehicles = max(2, min(5, num_customers // 3 + 1))
-# num_drone_routes = max(1, min(3, num_customers // 5 + 1))
-
-# K = list(range(1, num_vehicles + 1))  
-# R = list(range(1, num_drone_routes + 1))  
+import json 
 
 data_path = "./data/generated/data/N10/S101_N10_C_3G_R50.json"
 with open(data_path, 'r') as f:
