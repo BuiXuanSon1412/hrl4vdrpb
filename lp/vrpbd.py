@@ -411,18 +411,21 @@ for k in K:
 
 # 56
 for k in K:
-    for r in R[:-1]:  
-        r_next = r + 1
+    for r in R[:-1]:
         trip_r_active = pl.lpSum([x_tilde[k, r, i] for i in C])
-        trip_r_next_active = pl.lpSum([x_tilde[k, r_next, i] for i in C])
+        trip_r_next_active = pl.lpSum([x_tilde[k, r+1, i] for i in C])
+        model += trip_r_next_active <= trip_r_active * len(C)
         
+for k in K:
+    for r in R[:-1]:
         for i in N:
             for j in N:
-                model += z[k, j] >= z[k, i] - M * (2 - varrho[k, r, i] - lambda_var[k, r_next, j])
+                model += z[k, j] >= z[k, i] - M * (2 - varrho[k, r, i] - lambda_var[k, r+1, j])
                 
         for i in N:
             for j in N:
-                model += a_tilde[k, j] >= a_tilde[k, i] - M * (2 - varrho[k, r, i] - lambda_var[k, r_next, j])
+                model += a_tilde[k, j] >= b_tilde[k, i] + tau_l - M * (2 - varrho[k, r, i] - lambda_var[k, r+1, j])
+
 
 print(f"Model created with {len(model.variables())} variables and {len(model.constraints)} constraints")
 print("\nSolving the model")
