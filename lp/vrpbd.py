@@ -74,7 +74,7 @@ import json
 # K = list(range(1, num_vehicles + 1))  
 # R = list(range(1, num_drone_routes + 1))  
 
-data_path = "E:/bkai/VRPB/hrl4vdrpbtw/data/generated/data/N10/S101_N10_C_3G_R50.json"
+data_path = "./hrl4vdrpbtw/data/generated/data/N10/S101_N10_C_3G_R50.json"
 with open(data_path, 'r') as f:
     data = json.load(f)
 
