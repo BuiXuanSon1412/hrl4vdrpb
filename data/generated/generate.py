@@ -136,8 +136,10 @@ def generate_vrpbtw_data(
 
     time_windows = np.zeros((num_nodes, 2))
     time_windows[0] = [0.0, T_max]
+
     # T_max_per_truck = T_max / num_vehicles
     T_max_per_truck = 24.0  # keep lower bound in a day
+
     customer_nodes = []
     for i in range(1, num_nodes):
         Delta_i = (np.linalg.norm(coords[i] - coords[0]) * 2) / V_TRUCK
@@ -178,6 +180,7 @@ def generate_vrpbtw_data(
                 "DRONE_TAKEOFF_MIN": config["DRONE_TAKEOFF_MIN"],
                 "DRONE_LANDING_MIN": config["DRONE_LANDING_MIN"],
                 "SERVICE_TIME_MIN": config["SERVICE_TIME_MIN"],
+                "DRONE_DURATION_H": config["DRONE_DURATION_H"],
             },
             "Depot": {
                 "id": 0,

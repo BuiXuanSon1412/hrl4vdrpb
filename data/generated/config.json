@@ -5,6 +5,7 @@
     "DRONE_TAKEOFF_MIN": 1.0,
     "DRONE_LANDING_MIN": 1.0,
     "SERVICE_TIME_MIN": 5.0,
+    "DRONE_DURATION_H": 1.0,
     "CAPACITY_MAP": {
         "SMALL": 200,
         "LARGE": 1000,
