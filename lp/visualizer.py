@@ -28,10 +28,9 @@ for customer in customers:
 # LP solution
 vehicle_routes = [
     {
-        "route": [0, 3, 10, 6, 5, 1, 9, 4, 0],
-        "drone_trips": [{"launch": 1, "serve": [7], "land": 0}],
+        "route": [0, 3, 5, 1, 4, 0],
+        "drone_trips": [{"launch": 5, "serve": [2], "land": 0}],
     },
-    {"route": [0, 8, 0], "drone_trips": []},
 ]
 
 # Create figure
