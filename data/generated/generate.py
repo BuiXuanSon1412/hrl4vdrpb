@@ -315,7 +315,7 @@ if __name__ == "__main__":
         "--counts",
         type=int,
         nargs="+",
-        default=[10, 20, 50, 100, 150, 200],
+        default=[5, 10],
         help="Danh sách số lượng khách hàng (N) cần sinh. Mặc định: 20, 50, 100",
     )
     parser.add_argument(

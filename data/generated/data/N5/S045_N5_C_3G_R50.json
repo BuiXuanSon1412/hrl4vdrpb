@@ -1,0 +1,103 @@
+{
+    "Config": {
+        "General": {
+            "NUM_CUSTOMERS": 5,
+            "NUM_NODES": 6,
+            "MAX_COORD_KM": 100,
+            "T_MAX_SYSTEM_H": 15.735914711423993,
+            "TIME_WINDOW_SCALING_FACTOR": 1.5,
+            "COORD_DISTRIBUTION": "multi-gaussian",
+            "NUM_CLUSTERS": 3
+        },
+        "Vehicles": {
+            "NUM_TRUCKS": 1,
+            "NUM_DRONES": 1,
+            "V_TRUCK_KM_H": 40.0,
+            "V_DRONE_KM_H": 60.0,
+            "CAPACITY_TRUCK": 200,
+            "CAPACITY_DRONE": 50,
+            "DRONE_TAKEOFF_MIN": 1.0,
+            "DRONE_LANDING_MIN": 1.0,
+            "SERVICE_TIME_MIN": 5.0,
+            "DRONE_DURATION_H": 1.0
+        },
+        "Depot": {
+            "id": 0,
+            "coord": [
+                0.0,
+                0.0
+            ],
+            "time_window_h": [
+                0.0,
+                15.735914711423993
+            ]
+        }
+    },
+    "Nodes": [
+        {
+            "id": 1,
+            "coord": [
+                36.43359457393162,
+                10.693542793660692
+            ],
+            "demand": 45,
+            "type": "LINEHAUL",
+            "tw_h": [
+                6.525009945218179,
+                7.9148104791763885
+            ]
+        },
+        {
+            "id": 2,
+            "coord": [
+                63.65032019301914,
+                42.46767679342972
+            ],
+            "demand": -39,
+            "type": "BACKHAUL",
+            "tw_h": [
+                1.9651042169079975,
+                3.909022064146343
+            ]
+        },
+        {
+            "id": 3,
+            "coord": [
+                22.714760052487442,
+                23.53134626251076
+            ],
+            "demand": -10,
+            "type": "BACKHAUL",
+            "tw_h": [
+                1.7360065849284965,
+                1.7630782687022166
+            ]
+        },
+        {
+            "id": 4,
+            "coord": [
+                28.858856657231883,
+                0.0
+            ],
+            "demand": -42,
+            "type": "BACKHAUL",
+            "tw_h": [
+                6.8124071015704475,
+                7.067172436416662
+            ]
+        },
+        {
+            "id": 5,
+            "coord": [
+                42.23163909722692,
+                44.13655780498168
+            ],
+            "demand": 43,
+            "type": "LINEHAUL",
+            "tw_h": [
+                7.464917395488017,
+                10.871113420687685
+            ]
+        }
+    ]
+}

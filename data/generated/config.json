@@ -16,6 +16,7 @@
     "DEMAND_RANGE_LINEHAUL": [1, 50],
     "TIME_WINDOW_SCALING_FACTOR": 1.5,
     "FLEET_SIZES": {
+        "5": 1,
         "10": 2,
         "20": 4,
         "50": 10,
