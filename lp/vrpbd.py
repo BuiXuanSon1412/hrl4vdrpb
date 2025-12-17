@@ -3,61 +3,84 @@ import numpy as np
 import pandas as pd
 import os
 import sys
+import json 
 
+data_path = "./data/generated/data/N10/S101_N10_C_3G_R50.json"
+with open(data_path, 'r') as f:
+    data = json.load(f)
 
-data_path = "/hrl4vdrpbtw/data/benchmark/vrpbtw-solomon-100-derived/n15/c101-n15-b4-k25.csv"
+config = data['Config']
+nodes = data['Nodes']
 
-df = pd.read_csv(data_path)
+num_customers = config['General']['NUM_CUSTOMERS']
+num_nodes = config['General']['NUM_NODES']
+MAX_COORD = config['General']['MAX_COORD_KM']
+T_max = config['General']['T_MAX_SYSTEM_H']
 
-print("Các cột trong CSV:")
-print(df.columns.tolist())
-print(df.head())
+V_TRUCK = config['Vehicles']['V_TRUCK_KM_H']
+V_DRONE = config['Vehicles']['V_DRONE_KM_H']
+Q = config['Vehicles']['CAPACITY_TRUCK']
+Q_tilde = config['Vehicles']['CAPACITY_DRONE']
+num_vehicles = config['Vehicles']['NUM_TRUCKS']
+num_drones = config['Vehicles']['NUM_DRONES']
 
-# Depot là node đầu tiên (ID = 0)
-depot_idx = 0
+tau_l = config['Vehicles']['DRONE_TAKEOFF_MIN'] / 60.0  
+tau_r = config['Vehicles']['DRONE_LANDING_MIN'] / 60.0  
+service_time = config['Vehicles']['SERVICE_TIME_MIN'] / 60.0  
 
-linehaul_indices = df[df['DEMAND'] > 0].index.tolist()
+depot_info = config['Depot']
+depot_idx = depot_info['id']
+depot_coord = np.array(depot_info['coord'])
+depot_tw = depot_info['time_window_h']
 
-backhaul_indices = df[df['DEMAND'] < 0].index.tolist()
+coords = [depot_coord]
+demands = {depot_idx: 0}
+time_windows = {depot_idx: depot_tw}
+service_times = {depot_idx: 0}
+
+linehaul_indices = []
+backhaul_indices = []
+
+for node in nodes:
+    node_id = node['id']
+    coords.append(np.array(node['coord']))
+    demands[node_id] = node['demand']
+    time_windows[node_id] = node['tw_h']
+    service_times[node_id] = service_time
+    
+    if node['type'] == 'LINEHAUL':
+        linehaul_indices.append(node_id)
+    else:  
+        backhaul_indices.append(node_id)
+
+coords = np.array(coords)
 
 L = linehaul_indices  
 B = backhaul_indices  
 C = L + B             
 N = [depot_idx] + C   
 
-# Tạo ma trận khoảng cách từ XCOORD và YCOORD
-n_nodes = len(df)
+n_nodes = len(coords)
 d = np.zeros((n_nodes, n_nodes))
 d_tilde = np.zeros((n_nodes, n_nodes))
 
 for i in range(n_nodes):
     for j in range(n_nodes):
         if i != j:
-            xi, yi = df.loc[i, 'XCOORD.'], df.loc[i, 'YCOORD.']
-            xj, yj = df.loc[j, 'XCOORD.'], df.loc[j, 'YCOORD.']
-            d[i, j] = np.sqrt((xi - xj)**2 + (yi - yj)**2)
-            d_tilde[i, j] = d[i, j] * 1.2  
+            d[i, j] = np.linalg.norm(coords[i] - coords[j], ord=1)
+            d_tilde[i, j] = np.linalg.norm(coords[i] - coords[j], ord=2)
 
-# Thời gian di chuyển
-vehicle_speed = 1.0  
-drone_speed = 1.5    
-t = d / vehicle_speed
-t_tilde = d_tilde / drone_speed
+t = d / V_TRUCK
+t_tilde = d_tilde / V_DRONE
 
-q = df['DEMAND'].to_dict()
+q = demands
+t_start = {i: time_windows[i][0] for i in range(n_nodes)}
+t_end = {i: time_windows[i][1] for i in range(n_nodes)}
+s = service_times
 
-s = df['SERVICE TIME'].to_dict()
-
-t_start = df['READY TIME'].to_dict()
-t_end = df['DUE DATE'].to_dict()
-
-T_max = df.loc[depot_idx, 'DUE DATE']
-
-Q = 200.0          
-Q_tilde = 50.0     
-
-tau_l = 5.0        
-tau_r = 5.0        
+K = list(range(1, num_vehicles + 1))
+num_drone_routes = num_drones
+R = list(range(1, num_drone_routes + 1))
 
 c = 1.0            
 c_tilde = 0.2      
@@ -65,13 +88,6 @@ M = 10000.0
 
 w1 = 1.0
 w2 = 0.2
-
-num_customers = len(C)
-num_vehicles = max(2, min(5, num_customers // 3 + 1))
-num_drone_routes = max(1, min(3, num_customers // 5 + 1))
-
-K = list(range(1, num_vehicles + 1))  
-R = list(range(1, num_drone_routes + 1))  
 
 model = pl.LpProblem('VRPBD', pl.LpMinimize)
 
@@ -324,6 +340,24 @@ for k in K:
         total_time = flight_time + launch_time + land_time + service_time + wait_time
         model += total_time <= T_max
 
+# 56
+for k in K:
+    for r in R[:-1]:
+        trip_r_active = pl.lpSum([x_tilde[k, r, i] for i in C])
+        trip_r_next_active = pl.lpSum([x_tilde[k, r+1, i] for i in C])
+        model += trip_r_next_active <= trip_r_active * len(C)
+        
+for k in K:
+    for r in R[:-1]:
+        for i in N:
+            for j in N:
+                model += z[k, j] >= z[k, i] - M * (2 - varrho[k, r, i] - lambda_var[k, r+1, j])
+                
+        for i in N:
+            for j in N:
+                model += a_tilde[k, j] >= b_tilde[k, i] + tau_l - M * (2 - varrho[k, r, i] - lambda_var[k, r+1, j])
+
+
 print(f"Model created with {len(model.variables())} variables and {len(model.constraints)} constraints")
 print("\nSolving the model")
 
@@ -371,15 +405,19 @@ if model.status == pl.LpStatusOptimal or model.status == pl.LpStatusNotSolved:
             
             print(f"\n")
             print(f"VEHICLE {k}:")
-            print(f"Route: {' → '.join(map(str, route))}")
+            print(f"Route: {' -> '.join(map(str, route))}")
             print(f"Truck serves: {truck_serves}")
             
             has_drone = False
+            drone_ended = False
+
             for r in R:
+                if drone_ended:
+                    break
                 served = [i for i in C if pl.value(x_tilde[k, r, i]) > 0.5]
                 if served:
                     if not has_drone:
-                        print(f"\nDrone trips:")
+                        print(f"\nDrone {k} trips:")
                         has_drone = True
                     
                     launch = [i for i in N if pl.value(lambda_var[k, r, i]) > 0.5]
@@ -387,6 +425,9 @@ if model.status == pl.LpStatusOptimal or model.status == pl.LpStatusNotSolved:
                     
                     launch_node = launch[0] if launch else 'N/A'
                     land_node = land[0] if land else 'N/A'
+
+                    if land_node == 0:
+                        drone_ended = True
                     
                     drone_route = []
                     drone_current = launch_node
@@ -409,28 +450,18 @@ if model.status == pl.LpStatusOptimal or model.status == pl.LpStatusNotSolved:
                         if land_node != 'N/A' and land_node not in drone_route:
                             drone_route.append(land_node)
                     
-                    drone_route_str = ' → '.join(map(str, drone_route)) if drone_route else 'N/A'
+                    drone_route_str = ' -> '.join(map(str, drone_route)) if drone_route else 'N/A'
                     
-                    print(f"  Drone {r}: departs from Vehicle {k} at node {launch_node} → "
-                          f"serves {served} → returns to node {land_node}")
+                    print(f"  Trip {r}: departs at node {launch_node} -> "
+                          f"serves {served} -> returns to node {land_node}")
                     if drone_route:
                         print(f"    Full route: {drone_route_str}")
             
             if not has_drone:
-                print(f"\nDrone trips: None")
+                print(f"\nDrone {k} trips: None")
     
     print("\n")
-    print("DRONE TRIPS:")
-    for k in K:
-        for r in R:
-            served = [i for i in C if pl.value(x_tilde[k, r, i]) > 0.5]
-            launch = [i for i in N if pl.value(lambda_var[k, r, i]) > 0.5]
-            land = [i for i in N if pl.value(varrho[k, r, i]) > 0.5]
-            
-            if served:
-                print(f"Drone {k}, Trip {r}: Launch at {launch[0] if launch else 'N/A'}, "
-                      f"Serve {served}, Land at {land[0] if land else 'N/A'}")
-
+                
 else:
     print("\n")
     print("NO SOLUTION FOUND!")
