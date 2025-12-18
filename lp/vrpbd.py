@@ -5,7 +5,7 @@ import os
 import sys
 import json 
 
-data_path = "./data/generated/data/N10/S101_N10_C_3G_R50.json"
+data_path = "E:/bkai/VRPB/hrl4vdrpbtw/data/generated/data/N10/S042_N10_C_U_R50.json"
 with open(data_path, 'r') as f:
     data = json.load(f)
 
@@ -118,7 +118,8 @@ spanning_time = pl.LpVariable('spanning_time', lowBound=0, cat='Continuous')
 cost = pl.lpSum([y[k, i, j] * c * d[i][j] for k in K for i in N for j in N if i != j]) + \
        pl.lpSum([y_tilde[k, r, i, j] * c_tilde * d_tilde[i][j] for k in K for r in R for i in N for j in N])
 
-model += w1 * cost + w2 * spanning_time
+# model += w1 * cost + w2 * spanning_time
+model += cost
 
 for i in C:
     model += spanning_time >= xi[i] + s[i] - t_end[i], f'spanning_{i}'
@@ -142,8 +143,7 @@ for k in K:
     for r in R:
         model += pl.lpSum([lambda_var[k, r, i] for i in N]) <= 1
         model += pl.lpSum([varrho[k, r, j] for j in N]) <= 1
-        model += pl.lpSum([lambda_var[k, r, i] for i in N]) == pl.lpSum([x_tilde[k, r, i] for i in C])
-        model += pl.lpSum([varrho[k, r, j] for j in N]) == pl.lpSum([x_tilde[k, r, i] for i in C])
+        model += pl.lpSum([lambda_var[k, r, i] for i in N]) == pl.lpSum([varrho[k, r, j] for j in N])
 
 for k in K:
     for r in R:
@@ -343,8 +343,8 @@ for k in K:
 # 56
 for k in K:
     for r in R[:-1]:
-        trip_r_active = pl.lpSum([x_tilde[k, r, i] for i in C])
-        trip_r_next_active = pl.lpSum([x_tilde[k, r+1, i] for i in C])
+        trip_r_active = pl.lpSum([lambda_var[k, r, i] for i in C])
+        trip_r_next_active = pl.lpSum([lambda_var[k, r+1, i] for i in C])
         model += trip_r_next_active <= trip_r_active * len(C)
         
 for k in K:
@@ -357,6 +357,11 @@ for k in K:
             for j in N:
                 model += a_tilde[k, j] >= b_tilde[k, i] + tau_l - M * (2 - varrho[k, r, i] - lambda_var[k, r+1, j])
 
+for k in K:
+    model += pl.lpSum(lambda_var[k, r, i] for r in R for i in C) <= pl.lpSum(y[k, 0, j] for j in C)
+
+for k in K[:-1]:
+    model += pl.lpSum(y[k, 0, j] for j in C) >= pl.lpSum(y[k+1, 0, j] for j in C)
 
 print(f"Model created with {len(model.variables())} variables and {len(model.constraints)} constraints")
 print("\nSolving the model")
@@ -401,7 +406,7 @@ if model.status == pl.LpStatusOptimal or model.status == pl.LpStatusNotSolved:
             iter_count += 1
         
         if len(route) > 1:
-            truck_serves = [i for i in C if pl.value(x[k, i]) > 0.5]
+            truck_serves = [i for i in route if i in C]
             
             print(f"\n")
             print(f"VEHICLE {k}:")

@@ -4,7 +4,7 @@ from matplotlib.lines import Line2D
 import os
 
 # Load the instance data
-data_path = "../data/generated/data/N10/S101_N10_C_3G_R50.json"
+data_path = "E:/bkai/VRPB/hrl4vdrpbtw/data/generated/data/N5/S042_N5_C_U_R50.json"
 with open(data_path, "r") as f:
     data = json.load(f)
 
@@ -28,10 +28,9 @@ for customer in customers:
 # LP solution
 vehicle_routes = [
     {
-        "route": [0, 3, 10, 6, 5, 1, 9, 4, 0],
-        "drone_trips": [{"launch": 1, "serve": [7], "land": 0}],
+        "route": [0, 3, 5, 1, 4, 0],
+        "drone_trips": [{"launch": 5, "serve": [2], "land": 0}],
     },
-    {"route": [0, 8, 0], "drone_trips": []},
 ]
 
 # Create figure
