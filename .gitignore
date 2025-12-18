@@ -1,5 +1,4 @@
 .env/
-result/
 __pycache__/
 *.pt
 
