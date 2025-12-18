@@ -1,48 +1,78 @@
 import json
+import argparse
+import os
 import matplotlib.pyplot as plt
 from matplotlib.lines import Line2D
-import os
 
-# Load the instance data
-data_path = "E:/bkai/VRPB/hrl4vdrpbtw/data/generated/data/N5/S042_N5_C_U_R50.json"
+
+# -------------------------------------------------
+# Arguments (ONLY filename)
+# -------------------------------------------------
+parser = argparse.ArgumentParser()
+parser.add_argument(
+    "filename",
+    default="N5/S042_N5_C_3G_R50.json",
+    help="Relative JSON filename, e.g. N5/S042_N5_C_3G_R50.json",
+)
+args = parser.parse_args()
+
+DATA_ROOT = "../data/generated/data"
+RESULT_ROOT = "./result"
+IMG_ROOT = "./img"
+
+data_path = os.path.join(DATA_ROOT, args.filename)
+result_path = os.path.join(RESULT_ROOT, args.filename)
+
+if not os.path.exists(data_path):
+    raise FileNotFoundError(f"Data file not found: {data_path}")
+
+if not os.path.exists(result_path):
+    raise FileNotFoundError(f"Result file not found: {result_path}")
+
+
 with open(data_path, "r") as f:
     data = json.load(f)
 
-# Extract depot and customer information
+with open(result_path, "r") as f:
+    result = json.load(f)
+
+
+# -------------------------------------------------
+# Extract nodes
+# -------------------------------------------------
 depot = data["Config"]["Depot"]
-depot_coord = depot["coord"]
 customers = data["Nodes"]
 
-# Create mappings
-node_coords = {0: depot_coord}
-node_info = {0: {"type": "DEPOT", "demand": 0, "coord": depot_coord}}
+node_coords = {0: depot["coord"]}
+node_info = {0: {"type": "DEPOT", "demand": 0}}
 
-for customer in customers:
-    node_coords[customer["id"]] = customer["coord"]
-    node_info[customer["id"]] = {
-        "type": customer["type"],
-        "demand": customer["demand"],
-        "coord": customer["coord"],
+for c in customers:
+    node_coords[c["id"]] = c["coord"]
+    node_info[c["id"]] = {
+        "type": c["type"],
+        "demand": c["demand"],
     }
 
-# LP solution
-vehicle_routes = [
-    {
-        "route": [0, 3, 5, 1, 4, 0],
-        "drone_trips": [{"launch": 5, "serve": [2], "land": 0}],
-    },
-]
 
-# Create figure
+# -------------------------------------------------
+# Plot setup
+# -------------------------------------------------
 fig, ax = plt.subplots(figsize=(12, 10))
-ax.set_title("LP Solution Visualization", fontsize=14, fontweight="bold")
-ax.set_xlabel("X Coordinate (km)")
-ax.set_ylabel("Y Coordinate (km)")
+ax.set_title("Solution Visualization", fontsize=14, fontweight="bold")
+ax.set_xlabel("X")
+ax.set_ylabel("Y")
 ax.grid(True, linestyle="--", alpha=0.3)
 
-# ---- Truck routes with direction arrows ----
-for vehicle in vehicle_routes:
+
+# -------------------------------------------------
+# Truck routes
+# -------------------------------------------------
+start = None
+end = None
+for vehicle in result["routes"]:
     route = vehicle["route"]
+    arrival = vehicle["arrival"]
+    departure = vehicle["departure"]
 
     for i in range(len(route) - 1):
         x1, y1 = node_coords[route[i]]
@@ -52,114 +82,158 @@ for vehicle in vehicle_routes:
             "",
             xy=(x2, y2),
             xytext=(x1, y1),
-            arrowprops=dict(
-                arrowstyle="->",
-                color="green",
-                lw=2,
-                alpha=0.7,
-            ),
-            zorder=1,
+            arrowprops=dict(arrowstyle="->", color="green", lw=2),
         )
 
-# ---- Drone routes with direction arrows ----
-for vehicle in vehicle_routes:
-    for drone_trip in vehicle["drone_trips"]:
-        launch = node_coords[drone_trip["launch"]]
-        land = node_coords[drone_trip["land"]]
+    # arrival / departure under nodes
+    for nid, arr, dep in zip(route, arrival, departure):
+        if nid == 0:
+            if dep:
+                if start is None:
+                    start = dep
+                else:
+                    start = min(start, dep)
+            if arr:
+                if end is None:
+                    end = arr
+                else:
+                    end = max(end, arr)
 
-        for serve_id in drone_trip["serve"]:
-            serve = node_coords[serve_id]
+        else:
+            x, y = node_coords[nid]
+            ax.text(
+                x,
+                y - 1.2,
+                f"[{arr}, {dep}]",
+                ha="center",
+                va="top",
+                fontsize=8,
+                color="black",
+            )
 
-            # launch → serve
+
+# -------------------------------------------------
+# Drone trips
+# -------------------------------------------------
+for vehicle in result["routes"]:
+    for trip in vehicle.get("trips", []):
+        trip_route = trip["route"]
+        arrival = trip["arrival"]
+        departure = trip["departure"]
+        for i in range(len(trip_route) - 1):
+            x1, y1 = node_coords[trip_route[i]]
+            x2, y2 = node_coords[trip_route[i + 1]]
+
             ax.annotate(
                 "",
-                xy=serve,
-                xytext=launch,
+                xy=(x2, y2),
+                xytext=(x1, y1),
                 arrowprops=dict(
                     arrowstyle="->",
                     color="pink",
                     lw=2,
                     linestyle="--",
                 ),
-                zorder=2,
             )
 
-            # serve → land
-            ax.annotate(
-                "",
-                xy=land,
-                xytext=serve,
-                arrowprops=dict(
-                    arrowstyle="->",
-                    color="pink",
-                    lw=2,
-                    linestyle="--",
-                ),
-                zorder=2,
-            )
+        for nid, arr, dep in zip(trip_route, arrival, departure):
+            x, y = node_coords[nid]
+            if nid == 0:
+                if dep:
+                    if start is None:
+                        start = dep
+                    else:
+                        start = min(start, dep)
+                if arr:
+                    if end is None:
+                        end = arr
+                    else:
+                        end = max(end, arr)
+                if dep:
+                    ax.text(
+                        x + 2.6,
+                        y + 0.4,
+                        f"[{dep}",
+                        ha="center",
+                        va="top",
+                        fontsize=8,
+                        color="black",
+                    )
+            else:
+                if arr is None:
+                    ax.text(
+                        x + 2.6,
+                        y + 0.4,
+                        f"[{dep}",
+                        ha="center",
+                        va="top",
+                        fontsize=8,
+                        color="black",
+                    )
+                elif dep is None:
+                    ax.text(
+                        x + 2.4,
+                        y + 0.6,
+                        f"{arr}]",
+                        ha="center",
+                        va="top",
+                        fontsize=8,
+                        color="black",
+                    )
+                else:
+                    ax.text(
+                        x,
+                        y - 1.2,
+                        f"[{arr}, {dep}]",
+                        ha="center",
+                        va="top",
+                        fontsize=8,
+                        color="black",
+                    )
 
-# ---- Draw nodes + labels ----
-for node_id, coord in node_coords.items():
-    info = node_info[node_id]
 
-    if node_id == 0:
-        # Depot
-        ax.scatter(coord[0], coord[1], s=220, c="black", edgecolors="black", zorder=10)
+# -------------------------------------------------
+# Draw nodes
+# -------------------------------------------------
+for nid, (x, y) in node_coords.items():
+    info = node_info[nid]
+
+    if nid == 0:
+        ax.scatter(x, y, s=220, c="black", zorder=10)
+        ax.text(x, y, "0", color="white", ha="center", va="center", fontweight="bold")
         ax.text(
-            coord[0],
-            coord[1],
-            "0",
-            color="white",
+            x,
+            y - 1.2,
+            f"[{start}, {end}]",
             ha="center",
-            va="center",
-            fontsize=10,
-            fontweight="bold",
-            zorder=11,
+            va="top",
+            fontsize=8,
+            color="black",
         )
+
         continue
 
     color = "blue" if info["type"] == "LINEHAUL" else "red"
     sign = "+" if info["type"] == "LINEHAUL" else "-"
 
-    # Node
-    ax.scatter(
-        coord[0],
-        coord[1],
-        s=160,
-        c=color,
-        edgecolors="black",
-        zorder=10,
-        alpha=0.9,
-    )
-
-    # Node index (inside)
+    ax.scatter(x, y, s=160, c=color, edgecolors="black", zorder=10)
+    ax.text(x, y, str(nid), ha="center", va="center", color="white", fontweight="bold")
     ax.text(
-        coord[0],
-        coord[1],
-        str(node_id),
-        ha="center",
-        va="center",
-        fontsize=9,
-        fontweight="bold",
-        color="white",
-        zorder=11,
-    )
-
-    # Demand (above)
-    ax.text(
-        coord[0],
-        coord[1] + 1.2,
+        x,
+        y + 1.2,
         f"{sign}{abs(info['demand'])}",
         ha="center",
         va="bottom",
         fontsize=9,
-        color=color,
         fontweight="bold",
-        zorder=11,
+        color=color,
     )
 
-# ---- Legend ----
-legend_elements = [
+
+# -------------------------------------------------
+# Legend (outside plot)
+# -------------------------------------------------
+legend_items = [
     Line2D(
         [0],
         [0],
@@ -167,7 +241,6 @@ legend_elements = [
         color="w",
         label="Depot",
         markerfacecolor="black",
-        markeredgecolor="black",
         markersize=10,
     ),
     Line2D(
@@ -177,7 +250,6 @@ legend_elements = [
         color="w",
         label="Linehaul (+)",
         markerfacecolor="blue",
-        markeredgecolor="black",
         markersize=10,
     ),
     Line2D(
@@ -187,17 +259,33 @@ legend_elements = [
         color="w",
         label="Backhaul (-)",
         markerfacecolor="red",
-        markeredgecolor="black",
         markersize=10,
     ),
     Line2D([0], [0], color="green", lw=2, label="Truck Route"),
-    Line2D([0], [0], color="pink", lw=2, linestyle="--", label="Drone Route"),
+    Line2D([0], [0], color="pink", lw=2, linestyle="--", label="Drone Trip"),
 ]
 
-ax.legend(handles=legend_elements, loc="upper right")
+ax.legend(
+    handles=legend_items,
+    bbox_to_anchor=(1.02, 1),
+    loc="upper left",
+    borderaxespad=0,
+)
+
+
+# -------------------------------------------------
+# Save image
+# -------------------------------------------------
+# Get the directory part of the output path (e.g., './img/N5')
+name = os.path.splitext(args.filename)[0]
+out_path = os.path.join(IMG_ROOT, f"{name}.png")
+out_dir = os.path.dirname(out_path)
+
+# Ensure the directory and any necessary subdirectories exist
+os.makedirs(out_dir, exist_ok=True)
 
 plt.tight_layout()
+plt.savefig(out_path, dpi=200, bbox_inches="tight")
+plt.close()
 
-# Save
-os.makedirs("img", exist_ok=True)
-plt.savefig("img/lp.png", dpi=200, bbox_inches="tight")
+print(f"✔ Saved visualization to {out_path}")
