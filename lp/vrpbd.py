@@ -1,6 +1,5 @@
 import pulp as pl
 import numpy as np
-import pandas as pd
 import json
 
 import sys
@@ -179,7 +178,8 @@ cost = pl.lpSum(
     ]
 )
 
-model += w1 * cost + w2 * spanning_time
+# model += w1 * cost + w2 * spanning_time
+model += cost
 
 for i in C:
     model += spanning_time >= xi[i] + s[i] - t_end[i], f"spanning_{i}"
@@ -489,6 +489,13 @@ for k in K:
                     2 - varrho[k, r, i] - lambda_var[k, r + 1, j]
                 )
 
+for k in K:
+    model += pl.lpSum(lambda_var[k, r, i] for r in R for i in C) <= pl.lpSum(
+        y[k, 0, j] for j in C
+    )
+
+for k in K[:-1]:
+    model += pl.lpSum(y[k, 0, j] for j in C) >= pl.lpSum(y[k + 1, 0, j] for j in C)
 
 print(
     f"Model created with {len(model.variables())} variables and {len(model.constraints)} constraints"

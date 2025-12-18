@@ -30,9 +30,6 @@ if not os.path.exists(result_path):
     raise FileNotFoundError(f"Result file not found: {result_path}")
 
 
-# -------------------------------------------------
-# Load JSON
-# -------------------------------------------------
 with open(data_path, "r") as f:
     data = json.load(f)
 
