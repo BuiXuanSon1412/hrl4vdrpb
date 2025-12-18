@@ -205,14 +205,13 @@ for k in K:
     model += p[k, 0] == initial_load
 
 # 18-19
-epsilon = 0.01
 for k in K:
     for i in N:
         for j in C:
             if i != j:
                 load_change = - q[j] - pl.lpSum([Z_lambda[k, r, j] for r in R]) + pl.lpSum([Z_varrho[k, r, j] for r in R])
-                model += p[k, j] <= p[k, i] + load_change + M * (1 - y[k, i, j]) + epsilon
-                model += p[k, j] >= p[k, i] + load_change - M * (1 - y[k, i, j]) - epsilon
+                model += p[k, j] <= p[k, i] + load_change + M * (1 - y[k, i, j]) 
+                model += p[k, j] >= p[k, i] + load_change - M * (1 - y[k, i, j]) 
 
 # 20-30
 for k in K:
