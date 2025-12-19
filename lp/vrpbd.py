@@ -202,7 +202,7 @@ for k in K:
         model += pl.lpSum([y[k, j, i] for j in N if j != i]) == x[k, i]
         model += pl.lpSum([y[k, i, j] for j in N if j != i]) == x[k, i]
 
-# 6-8
+# 6-8: có thể không cần vì điều kiện 11-12 đã có thể đảm bảo
 for k in K:
     for r in R:
         model += pl.lpSum([lambda_var[k, r, i] for i in N]) <= 1
@@ -234,7 +234,7 @@ for k in K:
 # 10
 for k in K:
     for r in R:
-        for i in N:
+        for i in C:
             model += pl.lpSum(y_tilde[k, r, j, i] for j in N if j != i) - x_tilde[
                 k, r, i
             ] <= M * (lambda_var[k, r, i] + varrho[k, r, i])
@@ -302,9 +302,13 @@ for k in K:
     for i in N:
         for j in C:
             if i != j:
-                load_change = - q[j] - pl.lpSum([Z_lambda[k, r, j] for r in R]) + pl.lpSum([Z_varrho[k, r, j] for r in R])
-                model += p[k, j] <= p[k, i] + load_change + M * (1 - y[k, i, j]) 
-                model += p[k, j] >= p[k, i] + load_change - M * (1 - y[k, i, j]) 
+                load_change = (
+                    -q[j]
+                    - pl.lpSum([Z_lambda[k, r, j] for r in R])
+                    + pl.lpSum([Z_varrho[k, r, j] for r in R])
+                )
+                model += p[k, j] <= p[k, i] + load_change + M * (1 - y[k, i, j])
+                model += p[k, j] >= p[k, i] + load_change - M * (1 - y[k, i, j])
 
 # 20-30
 for k in K:
@@ -613,6 +617,19 @@ if model.status == pl.LpStatusOptimal or model.status == pl.LpStatusNotSolved:
         json.dump(result_data, f, indent=2)
 
     print(f"Results saved to {output_path}")
+    print("[TEST 1]: x_tilde")
+    for k, v in x_tilde.items():
+        print(f"\t {k, pl.value(v)}")
+
+    print("[TEST 2]: z")
+    for k, v in z.items():
+        print(f"\t {k, pl.value(v)}")
+
+    print("[TEST 2]: z_tilde")
+    for k, v in z_tilde.items():
+        print(f"\t {k, pl.value(v)}")
+
+
 else:
     print("\n")
     print("NO SOLUTION FOUND!")
