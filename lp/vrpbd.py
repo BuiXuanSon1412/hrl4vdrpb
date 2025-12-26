@@ -150,8 +150,8 @@ pl.lpSum([y_tilde[k, r, i, j] * c_tilde * d_tilde[i][j] for k in K for r in R fo
 # model += w1 * cost + w2 * spanning_time
 model += cost
 
-for i in C:
-    model += spanning_time >= xi[i] + s[i] - t_end[i], f"spanning_{i}"
+# for i in C:
+#     model += spanning_time >= xi[i] + s[i] - t_end[i], f"spanning_{i}"
 
 # 3
 for i in C:
@@ -197,11 +197,14 @@ for k in K:
 for k in K:
     for r in R:
         for i in C:
-            model += pl.lpSum(y_tilde[k, r, j, i] for j in N_end if j != i) - x_tilde[k, i] <= M * (lambda_var[k, r, i] + varrho[k, r, i])
-            model += pl.lpSum(y_tilde[k, r, j, i] for j in N_end if j != i) - x_tilde[k, i] >= -M * (lambda_var[k, r, i] + varrho[k, r, i])
+            # model += pl.lpSum(y_tilde[k, r, j, i] for j in N_end if j != i) - x_tilde[k, i] <= M * (lambda_var[k, r, i] + varrho[k, r, i])
+            # model += pl.lpSum(y_tilde[k, r, j, i] for j in N_end if j != i) - x_tilde[k, i] >= -M * (lambda_var[k, r, i] + varrho[k, r, i])
 
-            model += pl.lpSum(y_tilde[k, r, i, j] for j in N_end if j != i) - x_tilde[k, i] <= M * (lambda_var[k, r, i] + varrho[k, r, i])
-            model += pl.lpSum(y_tilde[k, r, i, j] for j in N_end if j != i) - x_tilde[k, i] >= -M * (lambda_var[k, r, i] + varrho[k, r, i])
+            # model += pl.lpSum(y_tilde[k, r, i, j] for j in N_end if j != i) - x_tilde[k, i] <= M * (lambda_var[k, r, i] + varrho[k, r, i])
+            # model += pl.lpSum(y_tilde[k, r, i, j] for j in N_end if j != i) - x_tilde[k, i] >= -M * (lambda_var[k, r, i] + varrho[k, r, i])
+            model += pl.lpSum(y_tilde[k, r, i, j] for j in N_end if i != j) == lambda_var[k, r, i]
+            model += pl.lpSum(y_tilde[k, r, j, i] for j in N_end if i != j) == varrho[k, r, i]
+            model += pl.lpSum(y_tilde[k, r, j, i] for j in N_end if i != j) == x_tilde[k, i]
 
 # 14-15
 for k in K:
@@ -217,9 +220,9 @@ for k in K:
 # 16-17
 for k in K:
     for r in R:
-        for i in N_end:
-            model += varrho[k, r, i] <= pl.lpSum([y_tilde[k, r, j, i] for j in N if j != i])
-            model += (varrho[k, r, i] >= x[k, i] + pl.lpSum([y_tilde[k, r, j, i] for j in N if j != i]) - 1)
+        for j in N_end:
+            model += varrho[k, r, j] <= pl.lpSum([y_tilde[k, r, i, j] for i in N if j != i])
+            model += (varrho[k, r, j] >= x[k, i] + pl.lpSum([y_tilde[k, r, i, j] for j in N if j != i]) - 1)
 
 # 18-21
 for k in K:
@@ -243,8 +246,8 @@ for k in K:
 
 # 22-23
 for k in K:
-    model += p[k, 0] == pl.lpSum([q[u] * x[k, u] for u in L]) + pl.lpSum([q[u] * x_tilde[k, u] for u in L for r in R])
-    model += p[k, end_depot_idx] == -pl.lpSum([q[u] * x[k, u] for u in B]) - pl.lpSum([q[u] * x_tilde[k, u] for u in B for r in R])
+    model += p[k, 0] == pl.lpSum([q[u] * x[k, u] for u in L]) + pl.lpSum([q[u] * x_tilde[k, u] for u in L])
+    model += p[k, end_depot_idx] == -pl.lpSum([q[u] * x[k, u] for u in B]) - pl.lpSum([q[u] * x_tilde[k, u] for u in B])
 
 # 24-25
 for k in K:
@@ -404,7 +407,8 @@ for k in K:
 
 # 79
 for k in K:
-    model += pl.lpSum(lambda_var[k, r, i] for i in N) <= pl.lpSum(y[k, 0, j] for j in C)
+    for r in R: 
+        model += pl.lpSum(lambda_var[k, r, i] for i in N) <= pl.lpSum(y[k, 0, j] for j in C)
 
 # 80
 for k in K[:-1]:
