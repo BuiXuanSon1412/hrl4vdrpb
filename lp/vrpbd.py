@@ -220,9 +220,9 @@ for k in K:
 # 16-17
 for k in K:
     for r in R:
-        for j in N_end:
-            model += varrho[k, r, j] <= pl.lpSum([y_tilde[k, r, i, j] for i in N if j != i])
-            model += (varrho[k, r, j] >= x[k, i] + pl.lpSum([y_tilde[k, r, i, j] for j in N if j != i]) - 1)
+        for i in N_end:
+            model += varrho[k, r, i] <= pl.lpSum([y_tilde[k, r, j, i] for j in N if j != i])
+            model += (varrho[k, r, i] >= x[k, i] + pl.lpSum([y_tilde[k, r, i, j] for j in N if j != i]) - 1)
 
 # 18-21
 for k in K:
