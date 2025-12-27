@@ -73,7 +73,7 @@ n_nodes = len(coords)
 end_depot_idx = n_nodes
 coords = np.vstack([coords, depot_coord])
 demands[end_depot_idx] = 0
-time_windows[end_depot_idx] = depot_tw 
+time_windows[end_depot_idx] = depot_tw
 service_times[end_depot_idx] = 0
 
 n_nodes = len(coords)
@@ -121,43 +121,98 @@ w2 = 0.2
 model = pl.LpProblem("VRPBD", pl.LpMinimize)
 
 x = pl.LpVariable.dicts("x", ((k, i) for k in K for i in N_all), cat="Binary")
-y = pl.LpVariable.dicts("y", ((k, i, j) for k in K for i in N_all for j in N_all if i != j), cat="Binary")
-z = pl.LpVariable.dicts("z", ((k, i) for k in K for i in N_all), lowBound=0, cat="Integer")
-p = pl.LpVariable.dicts("p", ((k, i) for k in K for i in N_all), lowBound=0, cat="Continuous")
-a = pl.LpVariable.dicts("a", ((k, i) for k in K for i in N_all), lowBound=0, cat="Continuous")
-b = pl.LpVariable.dicts("b", ((k, i) for k in K for i in N_all), lowBound=0, cat="Continuous")
+y = pl.LpVariable.dicts(
+    "y", ((k, i, j) for k in K for i in N_all for j in N_all if i != j), cat="Binary"
+)
+z = pl.LpVariable.dicts(
+    "z", ((k, i) for k in K for i in N_all), lowBound=0, cat="Integer"
+)
+p = pl.LpVariable.dicts(
+    "p", ((k, i) for k in K for i in N_all), lowBound=0, cat="Continuous"
+)
+a = pl.LpVariable.dicts(
+    "a", ((k, i) for k in K for i in N_all), lowBound=0, cat="Continuous"
+)
+b = pl.LpVariable.dicts(
+    "b", ((k, i) for k in K for i in N_all), lowBound=0, cat="Continuous"
+)
 
-x_tilde = pl.LpVariable.dicts("x_tilde", ((k, i) for k in K for i in N_all), cat="Binary")
-y_tilde = pl.LpVariable.dicts("y_tilde", ((k, r, i, j) for k in K for r in R for i in N_all for j in N_all if i != j), cat="Binary")
-z_tilde = pl.LpVariable.dicts("z_tilde", ((k, r, i) for k in K for r in R for i in N_all), lowBound=0, cat="Integer")
-lambda_var = pl.LpVariable.dicts("lambda", ((k, r, i) for k in K for r in R for i in N_all), cat="Binary")
-varrho = pl.LpVariable.dicts("varrho", ((k, r, i) for k in K for r in R for i in N_all), cat="Binary")
-p_tilde = pl.LpVariable.dicts("p_tilde", ((k, r, i) for k in K for r in R for i in N_all), lowBound=0, cat="Continuous")
-a_tilde = pl.LpVariable.dicts("a_tilde", ((k, i) for k in K for i in N_all), lowBound=0, cat="Continuous")
-b_tilde = pl.LpVariable.dicts("b_tilde", ((k, i) for k in K for i in N_all), lowBound=0, cat="Continuous")
-h = pl.LpVariable.dicts("h", ((k, r, i) for k in K for r in R for i in N_all), lowBound=0, cat="Continuous")
+x_tilde = pl.LpVariable.dicts(
+    "x_tilde", ((k, i) for k in K for i in N_all), cat="Binary"
+)
+y_tilde = pl.LpVariable.dicts(
+    "y_tilde",
+    ((k, r, i, j) for k in K for r in R for i in N_all for j in N_all if i != j),
+    cat="Binary",
+)
+z_tilde = pl.LpVariable.dicts(
+    "z_tilde",
+    ((k, r, i) for k in K for r in R for i in N_all),
+    lowBound=0,
+    cat="Integer",
+)
+lambda_var = pl.LpVariable.dicts(
+    "lambda", ((k, r, i) for k in K for r in R for i in N_all), cat="Binary"
+)
+varrho = pl.LpVariable.dicts(
+    "varrho", ((k, r, i) for k in K for r in R for i in N_all), cat="Binary"
+)
+p_tilde = pl.LpVariable.dicts(
+    "p_tilde",
+    ((k, r, i) for k in K for r in R for i in N_all),
+    lowBound=0,
+    cat="Continuous",
+)
+a_tilde = pl.LpVariable.dicts(
+    "a_tilde", ((k, i) for k in K for i in N_all), lowBound=0, cat="Continuous"
+)
+b_tilde = pl.LpVariable.dicts(
+    "b_tilde", ((k, i) for k in K for i in N_all), lowBound=0, cat="Continuous"
+)
+h = pl.LpVariable.dicts(
+    "h", ((k, r, i) for k in K for r in R for i in N_all), lowBound=0, cat="Continuous"
+)
 
-Z_lambda = pl.LpVariable.dicts("Z_lambda", ((k, r, i) for k in K for r in R for i in N_all), lowBound=0, cat="Continuous")
-Z_varrho = pl.LpVariable.dicts("Z_varrho", ((k, r, i) for k in K for r in R for i in N_all), lowBound=0, cat="Continuous")
+Z_lambda = pl.LpVariable.dicts(
+    "Z_lambda",
+    ((k, r, i) for k in K for r in R for i in N_all),
+    lowBound=0,
+    cat="Continuous",
+)
+Z_varrho = pl.LpVariable.dicts(
+    "Z_varrho",
+    ((k, r, i) for k in K for r in R for i in N_all),
+    lowBound=0,
+    cat="Continuous",
+)
 
 xi = pl.LpVariable.dicts("xi", (i for i in N_all), lowBound=0, cat="Continuous")
 
 spanning_time = pl.LpVariable("spanning_time", lowBound=0, cat="Continuous")
 
-cost = pl.lpSum([y[k, i, j] * c * d[i][j] for k in K for i in N_all for j in N_all if i != j]) + \
-pl.lpSum([y_tilde[k, r, i, j] * c_tilde * d_tilde[i][j] for k in K for r in R for i in N_all for j in N_end if i != j])
+cost = pl.lpSum(
+    [y[k, i, j] * c * d[i][j] for k in K for i in N_all for j in N_all if i != j]
+) + pl.lpSum(
+    [
+        y_tilde[k, r, i, j] * c_tilde * d_tilde[i][j]
+        for k in K
+        for r in R
+        for i in N_all
+        for j in N_end
+        if i != j
+    ]
+)
 
 # model += w1 * cost + w2 * spanning_time
-model += cost
+# model += cost
+model += spanning_time
 
 # for i in C:
 #     model += spanning_time >= xi[i] + s[i] - t_end[i], f"spanning_{i}"
 
 # 3
 for i in C:
-    model += (
-        pl.lpSum([x[k, i] for k in K])+ pl.lpSum([x_tilde[k, i] for k in K])== 1
-    )
+    model += pl.lpSum([x[k, i] for k in K]) + pl.lpSum([x_tilde[k, i] for k in K]) == 1
 
 # 4-5 FIX
 for k in K:
@@ -174,7 +229,9 @@ for k in K:
     for r in R:
         model += pl.lpSum([lambda_var[k, r, i] for i in N]) <= 1
         model += pl.lpSum([varrho[k, r, j] for j in N_end]) <= 1
-        model += pl.lpSum([lambda_var[k, r, i] for i in N]) == pl.lpSum([varrho[k, r, j] for j in N_end])
+        model += pl.lpSum([lambda_var[k, r, i] for i in N]) == pl.lpSum(
+            [varrho[k, r, j] for j in N_end]
+        )
 
 # 8
 for k in K:
@@ -216,8 +273,13 @@ for k in K:
 for k in K:
     for r in R:
         for i in N_end:
-            model += varrho[k, r, i] <= pl.lpSum([y_tilde[k, r, j, i] for j in N if j != i])
-            model += (varrho[k, r, i] >= x[k, i] + pl.lpSum([y_tilde[k, r, i, j] for j in N if j != i]) - 1)
+            model += varrho[k, r, i] <= pl.lpSum(
+                [y_tilde[k, r, j, i] for j in N if j != i]
+            )
+            model += (
+                varrho[k, r, i]
+                >= x[k, i] + pl.lpSum([y_tilde[k, r, i, j] for j in N if j != i]) - 1
+            )
 
 # 18-21
 for k in K:
@@ -241,8 +303,12 @@ for k in K:
 
 # 22-23
 for k in K:
-    model += p[k, 0] == pl.lpSum([q[u] * x[k, u] for u in L]) + pl.lpSum([q[u] * x_tilde[k, u] for u in L])
-    model += p[k, end_depot_idx] == -pl.lpSum([q[u] * x[k, u] for u in B]) - pl.lpSum([q[u] * x_tilde[k, u] for u in B])
+    model += p[k, 0] == pl.lpSum([q[u] * x[k, u] for u in L]) + pl.lpSum(
+        [q[u] * x_tilde[k, u] for u in L]
+    )
+    model += p[k, end_depot_idx] == -pl.lpSum([q[u] * x[k, u] for u in B]) - pl.lpSum(
+        [q[u] * x_tilde[k, u] for u in B]
+    )
 
 # 24-25
 for k in K:
@@ -264,15 +330,23 @@ for k in K:
 for k in K:
     for r in R:
         for j in N:
-            model += Z_lambda[k, r, j] <= p_tilde[k, r, j] + Q_tilde * (1 - lambda_var[k, r, j])
+            model += Z_lambda[k, r, j] <= p_tilde[k, r, j] + Q_tilde * (
+                1 - lambda_var[k, r, j]
+            )
             model += Z_lambda[k, r, j] <= Q_tilde * lambda_var[k, r, j]
-            model += Z_lambda[k, r, j] >= p_tilde[k, r, j] - Q_tilde * (1 - lambda_var[k, r, j])
+            model += Z_lambda[k, r, j] >= p_tilde[k, r, j] - Q_tilde * (
+                1 - lambda_var[k, r, j]
+            )
 for k in K:
     for r in R:
         for j in N_end:
-            model += Z_varrho[k, r, j] <= p_tilde[k, r, j] + Q_tilde * (1 - varrho[k, r, j])
+            model += Z_varrho[k, r, j] <= p_tilde[k, r, j] + Q_tilde * (
+                1 - varrho[k, r, j]
+            )
             model += Z_varrho[k, r, j] <= Q_tilde * varrho[k, r, j]
-            model += Z_varrho[k, r, j] >= p_tilde[k, r, j] - Q_tilde * (1 - varrho[k, r, j])
+            model += Z_varrho[k, r, j] >= p_tilde[k, r, j] - Q_tilde * (
+                1 - varrho[k, r, j]
+            )
 
 # 36-37
 for k in K:
@@ -296,8 +370,12 @@ for k in K:
         for i in N:
             for j in N_end:
                 if i != j:
-                    model += p_tilde[k, r, j] <= p_tilde[k, r, i] - q[j] * x_tilde[k, j] + M * (1 - y_tilde[k, r, i, j])
-                    model += p_tilde[k, r, j] >= p_tilde[k, r, i] - q[j] * x_tilde[k, j] - M * (1 - y_tilde[k, r, i, j])
+                    model += p_tilde[k, r, j] <= p_tilde[k, r, i] - q[j] * x_tilde[
+                        k, j
+                    ] + M * (1 - y_tilde[k, r, i, j])
+                    model += p_tilde[k, r, j] >= p_tilde[k, r, i] - q[j] * x_tilde[
+                        k, j
+                    ] - M * (1 - y_tilde[k, r, i, j])
 
 # 42
 for k in K:
@@ -333,8 +411,12 @@ for k in K:
         for i in N:
             for j in N_end:
                 if i != j:
-                    model += a_tilde[k, j] >= b_tilde[k, i] + tau_l + t_tilde[i][j] - M * (1 - y_tilde[k, r, i, j])
-                    model += a_tilde[k, j] <= b_tilde[k, i] + tau_l + t_tilde[i][j] + M * (1 - y_tilde[k, r, i, j])
+                    model += a_tilde[k, j] >= b_tilde[k, i] + tau_l + t_tilde[i][
+                        j
+                    ] - M * (1 - y_tilde[k, r, i, j])
+                    model += a_tilde[k, j] <= b_tilde[k, i] + tau_l + t_tilde[i][
+                        j
+                    ] + M * (1 - y_tilde[k, r, i, j])
 
 # 50
 for k in K:
@@ -365,15 +447,23 @@ for k in K:
 for k in K:
     for r in R:
         for j in N_end:
-            model += a_tilde[k, j] + h[k, r, j] + tau_r >= a[k, j] - M * (1 - varrho[k, r, j])
-            model += a_tilde[k, j] + h[k, r, j] + tau_r <= b[k, j] + M * (1 - varrho[k, r, j])
+            model += a_tilde[k, j] + h[k, r, j] + tau_r >= a[k, j] - M * (
+                1 - varrho[k, r, j]
+            )
+            model += a_tilde[k, j] + h[k, r, j] + tau_r <= b[k, j] + M * (
+                1 - varrho[k, r, j]
+            )
 
 # 56-58
 for k in K:
     for r in R:
         for i in C:
-            model += h[k, r, i] >= xi[i] - a_tilde[k, i] - tau_r - M * (1 - x_tilde[k, i])
-            model += h[k, r, i] <= xi[i] - a_tilde[k, i] - tau_r + M * (1 - x_tilde[k, i])
+            model += h[k, r, i] >= xi[i] - a_tilde[k, i] - tau_r - M * (
+                1 - x_tilde[k, i]
+            )
+            model += h[k, r, i] <= xi[i] - a_tilde[k, i] - tau_r + M * (
+                1 - x_tilde[k, i]
+            )
             model += h[k, r, i] >= 0
 
 # 59
@@ -396,21 +486,29 @@ for k in K:
     for r in R[:-1]:
         for i in N_end:
             for j in N:
-                model += z[k, j] >= z[k, i] - M * (2 - varrho[k, r, i] - lambda_var[k, r + 1, j])
+                model += z[k, j] >= z[k, i] - M * (
+                    2 - varrho[k, r, i] - lambda_var[k, r + 1, j]
+                )
 
         for i in N_end:
             for j in N:
-                model += a_tilde[k, j] >= b_tilde[k, i] + tau_l - M * (2 - varrho[k, r, i] - lambda_var[k, r + 1, j])
+                model += a_tilde[k, j] >= b_tilde[k, i] + tau_l - M * (
+                    2 - varrho[k, r, i] - lambda_var[k, r + 1, j]
+                )
 
 # 78
 for k in K:
     for r in R[:-1]:
-        model += pl.lpSum(lambda_var[k, r+1, i] for i in N) <= pl.lpSum(lambda_var[k, r, i] for i in N)
+        model += pl.lpSum(lambda_var[k, r + 1, i] for i in N) <= pl.lpSum(
+            lambda_var[k, r, i] for i in N
+        )
 
 # 79
 for k in K:
-    for r in R: 
-        model += pl.lpSum(lambda_var[k, r, i] for i in N) <= pl.lpSum(y[k, 0, j] for j in C)
+    for r in R:
+        model += pl.lpSum(lambda_var[k, r, i] for i in N) <= pl.lpSum(
+            y[k, 0, j] for j in C
+        )
 
 # 80
 for k in K[:-1]:
@@ -437,108 +535,98 @@ if model.status == pl.LpStatusOptimal or model.status == pl.LpStatusNotSolved:
         "objective": round(pl.value(model.objective), 2),
         "routes": [],
     }
+    import json
 
     for k in K:
-        route = []
+        route = [0]
         current = 0
-        visited = set([0])
-        route.append(0)
+        visited = {0}
 
-        max_iter = len(N) * 2
-        iter_count = 0
-        while iter_count < max_iter:
+        # 1. Reconstruct Truck Route
+        max_iter = len(N_all) * 2
+        for _ in range(max_iter):
             found = False
-            for j in N:
+            for j in N_all:  # Use N_all to ensure end_depot_idx is reachable
                 if j not in visited and pl.value(y[k, current, j]) > 0.5:
                     route.append(j)
                     visited.add(j)
                     current = j
                     found = True
                     break
-            if not found:
-                if current != 0 and pl.value(y[k, current, 0]) > 0.5:
-                    route.append(0)
+            if not found or current == end_depot_idx:
                 break
-            iter_count += 1
-    
+
+        # 2. Process Route Data (Only if truck left the depot)
         if len(route) > 1:
             route_info = {
-                "id": k - 1,
+                "id": int(k),
                 "route": route,
                 "arrival": [
-                    round(pl.value(a[k, i]), 2) if i in C else 0.0 for i in route
+                    round(pl.value(a[k, i]), 2) if idx > 0 else None
+                    for idx, i in enumerate(route)
                 ],
                 "departure": [
-                    round(pl.value(b[k, i]), 2) if i != 0 else 0.5 for i in route[:-1]
-                ]
-                + [None],
+                    round(pl.value(b[k, i]), 2) if idx < len(route) - 1 else None
+                    for idx, i in enumerate(route)
+                ],
                 "trips": [],
             }
 
-            has_drone = False
-            drone_ended = False
-
+            # 3. Process Drone Trips (Sorties)
             for r in R:
-                if drone_ended:
-                    break
-                served = [i for i in C if pl.value(x_tilde[k, i]) > 0.5]
-                if served:
-                    if not has_drone:
-                        has_drone = True
+                # Check if this specific trip r for truck k was used
+                # We identify the launch node first
+                launch_nodes = [
+                    i
+                    for i in N
+                    if pl.value(lambda_var[k, r, i])
+                    and pl.value(lambda_var[k, r, i]) > 0.5
+                ]
 
-                    launch = [i for i in N if pl.value(lambda_var[k, r, i]) > 0.5]
-                    land = [i for i in N if pl.value(varrho[k, r, i]) > 0.5]
-
-                    launch_node = launch[0] if launch else "N/A"
-                    land_node = land[0] if land else "N/A"
-
-                    if land_node == 0:
-                        drone_ended = True
-
-                    drone_route = []
+                if launch_nodes:
+                    launch_node = launch_nodes[0]
+                    drone_route = [launch_node]
                     drone_current = launch_node
-                    drone_visited = set()
+                    drone_visited = {launch_node}
 
-                    if launch_node != "N/A":
-                        for _ in range(len(N)):
-                            drone_route.append(drone_current)
-                            drone_visited.add(drone_current)
-
-                            found_next = False
-                            for j in N:
-                                if (
-                                    j not in drone_visited
-                                    and pl.value(y_tilde[k, r, drone_current, j]) > 0.5
-                                ):
-                                    drone_current = j
-                                    found_next = True
-                                    break
-                            if not found_next:
+                    # Reconstruct the drone path for this specific sortie
+                    for _ in range(len(N_all)):
+                        found_next = False
+                        for j in N_all:
+                            if (
+                                j not in drone_visited
+                                and pl.value(y_tilde[k, r, drone_current, j]) > 0.5
+                            ):
+                                drone_route.append(j)
+                                drone_visited.add(j)
+                                drone_current = j
+                                found_next = True
                                 break
+                        if not found_next:
+                            break
 
-                        if land_node != "N/A" and land_node not in drone_route:
-                            drone_route.append(land_node)
-
+                    if len(drone_route) < 3:
+                        break
+                    # Retrieve arrival/departure for drone trip
                     trip_info = {
-                        "id": r - 1,
+                        "id": int(r),
                         "route": drone_route,
-                        # Map arrival/departure based on your a_tilde and b_tilde variables
                         "arrival": [
-                            round(pl.value(a_tilde[k, i]), 2)
-                            if i != drone_route[0]
-                            else None
-                            for i in drone_route
+                            round(pl.value(a_tilde[k, i]), 2) if idx > 0 else None
+                            for idx, i in enumerate(drone_route)
                         ],
                         "departure": [
                             round(pl.value(b_tilde[k, i]), 2)
-                            if i != drone_route[-1]
+                            if idx < len(drone_route) - 1
                             else None
-                            for i in drone_route
+                            for idx, i in enumerate(drone_route)
                         ],
                     }
                     route_info["trips"].append(trip_info)
+
             result_data["routes"].append(route_info)
-    # Write to result folder
+
+    # Write to file
     with open(output_path, "w") as f:
         json.dump(result_data, f, indent=2)
 
@@ -563,11 +651,11 @@ if model.status == pl.LpStatusOptimal or model.status == pl.LpStatusNotSolved:
     print("[TEST 2]: z_tilde")
     for k, v in z_tilde.items():
         print(f"\t {k, pl.value(v)}")
-    
+
     print("[TEST 2]: lambda")
     for k, v in lambda_var.items():
         print(f"\t {k, pl.value(v)}")
-    
+
     print("[TEST 2]: varrho")
     for k, v in varrho.items():
         print(f"\t {k, pl.value(v)}")
@@ -579,4 +667,3 @@ else:
     print("\n")
     print("NO SOLUTION FOUND!")
     print(f"Status: {pl.LpStatus[model.status]}")
-

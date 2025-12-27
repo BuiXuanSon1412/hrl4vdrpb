@@ -7,10 +7,11 @@
   "objective": 256.37,
   "routes": [
     {
-      "id": 0,
+      "id": 1,
       "route": [
         0,
         5,
+<<<<<<< HEAD:lp/result/N5/S043_N5_C_3G_R50.json
         2,
         1,
         4,
@@ -27,9 +28,31 @@
       "departure": [
         0.5,
         1.07,
+=======
+        1,
+        6
+      ],
+      "arrival": [
+        null,
+        0.93,
+        5.62,
+        12.6,
+        17.26,
+        17.87,
+        19.77
+      ],
+      "departure": [
+        0.0,
+>>>>>>> 52812d7321859d72caf34d5fdcdec0d135147510:lp/result/N5/S043_N5_C_U_R50.json
         3.54,
         4.1,
         10.96,
+<<<<<<< HEAD:lp/result/N5/S043_N5_C_3G_R50.json
+=======
+        16.2,
+        17.34,
+        17.96,
+>>>>>>> 52812d7321859d72caf34d5fdcdec0d135147510:lp/result/N5/S043_N5_C_U_R50.json
         null
       ],
       "trips": []

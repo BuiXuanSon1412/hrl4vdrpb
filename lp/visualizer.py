@@ -1,5 +1,7 @@
+import enum
 import json
 import argparse
+from math import inf
 import os
 import matplotlib.pyplot as plt
 from matplotlib.lines import Line2D
@@ -48,11 +50,11 @@ node_info = {0: {"type": "DEPOT", "demand": 0}}
 
 for c in customers:
     node_coords[c["id"]] = c["coord"]
-    node_info[c["id"]] = {
-        "type": c["type"],
-        "demand": c["demand"],
-    }
+    node_info[c["id"]] = {"type": c["type"], "demand": c["demand"], "tw_h": c["tw_h"]}
 
+end_depot_idx = len(customers) + 1
+node_coords[end_depot_idx] = depot["coord"]
+node_info[end_depot_idx] = {"type": "DEPOT", "demand": 0}
 
 # -------------------------------------------------
 # Plot setup
@@ -67,8 +69,9 @@ ax.grid(True, linestyle="--", alpha=0.3)
 # -------------------------------------------------
 # Truck routes
 # -------------------------------------------------
-start = None
-end = None
+start = float("inf")
+end = float("-inf")
+
 for vehicle in result["routes"]:
     route = vehicle["route"]
     arrival = vehicle["arrival"]
@@ -88,23 +91,16 @@ for vehicle in result["routes"]:
     # arrival / departure under nodes
     for nid, arr, dep in zip(route, arrival, departure):
         if nid == 0:
-            if dep:
-                if start is None:
-                    start = dep
-                else:
-                    start = min(start, dep)
-            if arr:
-                if end is None:
-                    end = arr
-                else:
-                    end = max(end, arr)
-
+            start = min(start, dep)
+        elif nid == end_depot_idx:
+            end = max(end, arr)
         else:
             x, y = node_coords[nid]
+            tw = node_info[nid]["tw_h"]
             ax.text(
                 x,
                 y - 1.2,
-                f"[{arr}, {dep}]",
+                f"[{tw[0]:.2f}, {arr}, {dep}, {tw[1]:.2f}]",
                 ha="center",
                 va="top",
                 fontsize=8,
@@ -136,60 +132,40 @@ for vehicle in result["routes"]:
                 ),
             )
 
-        for nid, arr, dep in zip(trip_route, arrival, departure):
+        for i, (nid, arr, dep) in enumerate(zip(trip_route, arrival, departure)):
             x, y = node_coords[nid]
-            if nid == 0:
-                if dep:
-                    if start is None:
-                        start = dep
-                    else:
-                        start = min(start, dep)
-                if arr:
-                    if end is None:
-                        end = arr
-                    else:
-                        end = max(end, arr)
-                if dep:
-                    ax.text(
-                        x + 2.6,
-                        y + 0.4,
-                        f"[{dep}",
-                        ha="center",
-                        va="top",
-                        fontsize=8,
-                        color="black",
-                    )
+            if i == 0:
+                start = min(start, dep)
+                ax.text(
+                    x + 2.6,
+                    y + 0.4,
+                    f"[{dep}",
+                    ha="center",
+                    va="top",
+                    fontsize=8,
+                    color="black",
+                )
+            elif i == len(trip_route) - 1:
+                end = max(end, arr)
+                ax.text(
+                    x + 2.4,
+                    y + 0.6,
+                    f"{arr}]",
+                    ha="center",
+                    va="top",
+                    fontsize=8,
+                    color="black",
+                )
             else:
-                if arr is None:
-                    ax.text(
-                        x + 2.6,
-                        y + 0.4,
-                        f"[{dep}",
-                        ha="center",
-                        va="top",
-                        fontsize=8,
-                        color="black",
-                    )
-                elif dep is None:
-                    ax.text(
-                        x + 2.4,
-                        y + 0.6,
-                        f"{arr}]",
-                        ha="center",
-                        va="top",
-                        fontsize=8,
-                        color="black",
-                    )
-                else:
-                    ax.text(
-                        x,
-                        y - 1.2,
-                        f"[{arr}, {dep}]",
-                        ha="center",
-                        va="top",
-                        fontsize=8,
-                        color="black",
-                    )
+                ax.text(
+                    x,
+                    y - 1.2,
+                    f"[{arr}, {dep}]",
+                    ha="center",
+                    va="top",
+                    fontsize=8,
+                    color="black",
+                )
 
 
 # -------------------------------------------------
@@ -198,19 +174,7 @@ for vehicle in result["routes"]:
 for nid, (x, y) in node_coords.items():
     info = node_info[nid]
 
-    if nid == 0:
-        ax.scatter(x, y, s=220, c="black", zorder=10)
-        ax.text(x, y, "0", color="white", ha="center", va="center", fontweight="bold")
-        ax.text(
-            x,
-            y - 1.2,
-            f"[{start}, {end}]",
-            ha="center",
-            va="top",
-            fontsize=8,
-            color="black",
-        )
-
+    if nid == 0 or nid == end_depot_idx:
         continue
 
     color = "blue" if info["type"] == "LINEHAUL" else "red"
@@ -228,6 +192,19 @@ for nid, (x, y) in node_coords.items():
         fontweight="bold",
         color=color,
     )
+
+x, y = node_coords[0]
+ax.scatter(x, y, s=220, c="black", zorder=10)
+ax.text(x, y, "0", color="white", ha="center", va="center", fontweight="bold")
+ax.text(
+    x,
+    y - 1.2,
+    f"[{start}, {end}]",
+    ha="center",
+    va="top",
+    fontsize=8,
+    color="black",
+)
 
 
 # -------------------------------------------------
