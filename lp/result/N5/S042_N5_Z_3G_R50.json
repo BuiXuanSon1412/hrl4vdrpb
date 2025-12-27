@@ -1,9 +1,0 @@
-{
-  "weights": {
-    "cost": 1.0,
-    "makespan": 0.2,
-    "wait": 0.0
-  },
-  "objective": 63.0,
-  "routes": []
-}
