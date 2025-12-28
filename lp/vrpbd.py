@@ -191,7 +191,7 @@ xi = pl.LpVariable.dicts("xi", (i for i in N_all), lowBound=0, cat="Continuous")
 spanning_time = pl.LpVariable("spanning_time", lowBound=0, cat="Continuous")
 
 cost = pl.lpSum(
-    [y[k, i, j] * c * d[i][j] for k in K for i in N_all for j in N_all if i != j]
+    [y[k, i, j] * c * d[i][j] for k in K for i in N_all for j in N_end if i != j]
 ) + pl.lpSum(
     [
         y_tilde[k, r, i, j] * c_tilde * d_tilde[i][j]
@@ -204,8 +204,8 @@ cost = pl.lpSum(
 )
 
 # model += w1 * cost + w2 * spanning_time
-# model += cost
-model += spanning_time
+model += cost
+# model += spanning_time
 
 # for i in C:
 #     model += spanning_time >= xi[i] + s[i] - t_end[i], f"spanning_{i}"
@@ -214,10 +214,20 @@ model += spanning_time
 for i in C:
     model += pl.lpSum([x[k, i] for k in K]) + pl.lpSum([x_tilde[k, i] for k in K]) == 1
 
-# 4-5 FIX
 for k in K:
-    model += pl.lpSum([y[k, 0, j] for j in C]) == 1
-    model += pl.lpSum([y[k, i, end_depot_idx] for i in C]) == 1
+    for r in R:
+        model += pl.lpSum([y_tilde[k, r, i, j] for i in N for j in N_end if i != j]) <= M * pl.lpSum([lambda_var[k, r, i] for i in N])
+
+for k in K:
+    for r in R:
+        for i in C:
+            model += pl.lpSum([y_tilde[k, r, i, j] for j in N_end if i != j]) <= 1
+            model += pl.lpSum([y_tilde[k, r, j, i] for j in N if i != j]) <= 1
+
+# 4-5
+for k in K:
+    model += pl.lpSum([y[k, 0, j] for j in C]) <= 1
+    model += pl.lpSum([y[k, i, end_depot_idx] for i in C]) <= 1
     
 for k in K:
     for i in C:
@@ -244,7 +254,7 @@ for k in K:
 for k in K:
     for r in R:
         for i in N:
-            for j in N:
+            for j in N_end:
                 if i != j:
                     model += z_tilde[k, r, i] <= z_tilde[k, r, j] + M * (
                         1 - varrho[k, r, j]
@@ -256,11 +266,11 @@ for k in K:
         for i in C:
             model += pl.lpSum([y_tilde[k, r, j, i] for j in N if i != j]) == x_tilde[k, i]
             model += pl.lpSum([y_tilde[k, r, i, j] for j in N_end if i != j]) == x_tilde[k, i]
+            # model += pl.lpSum([y_tilde[k, r, j, i] for j in N if i != j]) - pl.lpSum([y_tilde[k, r, i, j] for j in N_end if i != j]) == varrho[k, r, i] - lambda_var[k, r, i]
         for i in N:
-            model += pl.lpSum([y_tilde[k, r, i, j] for j in N_end if i != j]) == lambda_var[k, r, i]
+            model += pl.lpSum([y_tilde[k, r, i, j] for j in N_end if i != j]) == lambda_var[k, r, i] + x_tilde[k, i]
         for i in N_end:
-            model += pl.lpSum([y_tilde[k, r, j, i] for j in N if i != j]) == varrho[k, r, i]
-            
+            model += pl.lpSum([y_tilde[k, r, j, i] for j in N if i != j]) == varrho[k, r, i] + x_tilde[k, i]
 
 # 14-15
 for k in K:
@@ -278,7 +288,7 @@ for k in K:
             )
             model += (
                 varrho[k, r, i]
-                >= x[k, i] + pl.lpSum([y_tilde[k, r, i, j] for j in N if j != i]) - 1
+                >= x[k, i] + pl.lpSum([y_tilde[k, r, j, i] for j in N if j != i]) - 1
             )
 
 # 18-21
@@ -286,8 +296,8 @@ for k in K:
     for i in N:
         for j in N_end:
             if i != j:
-                model += z[k, i] - z[k, j] + 1 <= M * (1 - y[k, i, j])
-                model += z[k, i] - z[k, j] + 1 >= -M * (1 - y[k, i, j])
+                model += z[k, i] - z[k, j] + 1 <= M * (2 - lambda_var[k, r, i] - varrho[k, r, j])
+                model += z[k, i] - z[k, j] + 1 >= -M * (2 - lambda_var[k, r, i] - varrho[k, r, j])
 
 for k in K:
     for r in R:
@@ -300,7 +310,7 @@ for k in K:
                     model += z_tilde[k, r, i] - z_tilde[k, r, j] + 1 >= -M * (
                         1 - y_tilde[k, r, i, j]
                     )
-
+                    
 # 22-23
 for k in K:
     model += p[k, 0] == pl.lpSum([q[u] * x[k, u] for u in L]) + pl.lpSum(
@@ -382,8 +392,9 @@ for k in K:
     for r in R:
         for i in N + [end_depot_idx]:
             model += p_tilde[k, r, i] <= Q_tilde
+            model += p_tilde[k, r, i] >= 0
 
-# 43-45 FIX
+# 43-45
 for i in C:
     model += xi[i] >= t_start[i]
 
@@ -400,10 +411,6 @@ for k in K:
         for j in N_end:
             if i != j:
                 model += a[k, j] >= b[k, i] + t[i][j] - M * (1 - y[k, i, j])
-for k in K:
-    for i in N_all:
-        model += a[k,i] >= t_start[i]
-        model += b[k,i] <= t_end[i]
 
 # 48-49
 for k in K:
@@ -422,7 +429,6 @@ for k in K:
 for k in K:
     for i in C:
         model += b[k, i] >= xi[i] + s[i] - M * (1 - x[k, i])
-        model += b[k, i] <= xi[i] + s[i] + M * (1 - x[k, i])
 
 # 51
 for k in K:
@@ -435,7 +441,6 @@ for k in K:
     for r in R:
         for i in C:
             model += b_tilde[k, i] >= xi[i] + s[i] - M * (1 - x_tilde[k, i])
-            model += b_tilde[k, i] <= xi[i] + s[i] + M * (1 - x_tilde[k, i])
 
 # 53
 for k in K:
@@ -644,14 +649,6 @@ if model.status == pl.LpStatusOptimal or model.status == pl.LpStatusNotSolved:
     for k, v in y_tilde.items():
         print(f"\t {k, pl.value(v)}")
 
-    print("[TEST 2]: z")
-    for k, v in z.items():
-        print(f"\t {k, pl.value(v)}")
-
-    print("[TEST 2]: z_tilde")
-    for k, v in z_tilde.items():
-        print(f"\t {k, pl.value(v)}")
-
     print("[TEST 2]: lambda")
     for k, v in lambda_var.items():
         print(f"\t {k, pl.value(v)}")
@@ -667,3 +664,7 @@ else:
     print("\n")
     print("NO SOLUTION FOUND!")
     print(f"Status: {pl.LpStatus[model.status]}")
+
+    print("[TEST 1]: payload", Q)
+    for k, v in p.items():
+        print(f"\t {k, pl.value(v)}")
