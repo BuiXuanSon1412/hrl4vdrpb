@@ -14,12 +14,12 @@
             "NUM_DRONES": 2,
             "V_TRUCK_KM_H": 40.0,
             "V_DRONE_KM_H": 60.0,
-            "CAPACITY_TRUCK": 200,
-            "CAPACITY_DRONE": 50,
+            "CAPACITY_TRUCK": 100,
+            "CAPACITY_DRONE": 150,
             "DRONE_TAKEOFF_MIN": 1.0,
             "DRONE_LANDING_MIN": 1.0,
             "SERVICE_TIME_MIN": 5.0,
-            "DRONE_DURATION_H": 1.0
+            "DRONE_DURATION_H": 10.0
         },
         "Depot": {
             "id": 0,

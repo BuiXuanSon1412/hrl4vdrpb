@@ -293,11 +293,12 @@ for k in K:
 
 # 18-21
 for k in K:
-    for i in N:
-        for j in N_end:
-            if i != j:
-                model += z[k, i] - z[k, j] + 1 <= M * (2 - lambda_var[k, r, i] - varrho[k, r, j])
-                model += z[k, i] - z[k, j] + 1 >= -M * (2 - lambda_var[k, r, i] - varrho[k, r, j])
+    for r in R:
+        for i in N:
+            for j in N_end:
+                if i != j:
+                    model += z[k, i] - z[k, j] + 1 <= M * (2 - lambda_var[k, r, i] - varrho[k, r, j])
+                    model += z[k, i] - z[k, j] + 1 >= -M * (2 - lambda_var[k, r, i] - varrho[k, r, j])
 
 for k in K:
     for r in R:
