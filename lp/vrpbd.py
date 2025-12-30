@@ -20,9 +20,6 @@ parser.add_argument(
 
 args = parser.parse_args()
 
-# if len(sys.argv) < 2:
-#    print("Usage: python vrpbd.py <filename.json>")
-#    sys.exit(1)
 DATA_ROOT = "../data/generated/data"
 
 
@@ -151,8 +148,8 @@ def run(filename):
     c_tilde = 0.2
     M = 10000.0
 
-    w1 = 1.0
-    w2 = 0.0
+    w1 = 0.0
+    w2 = 1.0
 
     model = pl.LpProblem("VRPBD", pl.LpMinimize)
 
@@ -245,6 +242,7 @@ def run(filename):
     )
 
     model += w1 * cost + w2 * spanning_time
+
     # model += cost
     # model += spanning_time
 
@@ -626,6 +624,30 @@ def run(filename):
             "routes": [],
         }
 
+        print("[TEST 1]: x")
+        for k, v in x.items():
+            print(f"\t {k, pl.value(v)}")
+        print("[TEST 2]: x_tilde")
+        for k, v in x_tilde.items():
+            print(f"\t {k, pl.value(v)}")
+        print("[TEST 3]: y")
+        for k, v in y.items():
+            print(f"\t {k, pl.value(v)}")
+        print("[TEST 4]: y_tilde")
+        for k, v in y_tilde.items():
+            print(f"\t {k, pl.value(v)}")
+
+        print("[TEST 2]: lambda")
+        for k, v in lambda_var.items():
+            print(f"\t {k, pl.value(v)}")
+
+        print("[TEST 2]: varrho")
+        for k, v in varrho.items():
+            print(f"\t {k, pl.value(v)}")
+        print("[TEST 1]: payload", Q)
+        for k, v in p.items():
+            print(f"\t {k, pl.value(v)}")
+
         for k in K:
             route = [0]
             current = 0
@@ -635,8 +657,12 @@ def run(filename):
             max_iter = len(N_all) * 2
             for _ in range(max_iter):
                 found = False
-                for j in N_all:  # Use N_all to ensure end_depot_idx is reachable
-                    if j not in visited and pl.value(y[k, current, j]) > 0.5:
+                for j in N_end:  # Use N_all to ensure end_depot_idx is reachable
+                    if (
+                        j not in visited
+                        and y[k, current, j].varValue
+                        and pl.value(y[k, current, j]) > 0.5
+                    ):
                         route.append(j)
                         visited.add(j)
                         current = j
@@ -684,6 +710,7 @@ def run(filename):
                             for j in N_all:
                                 if (
                                     j not in drone_visited
+                                    and y_tilde[k, r, drone_current, j].varValue
                                     and pl.value(y_tilde[k, r, drone_current, j]) > 0.5
                                 ):
                                     drone_route.append(j)
