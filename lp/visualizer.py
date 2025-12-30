@@ -188,7 +188,14 @@ def run(filename: str):
 
         ax.scatter(x, y, s=160, c=color, edgecolors="black", zorder=10)
         ax.text(
-            x, y, str(nid), ha="center", va="center", color="white", fontweight="bold"
+            x,
+            y,
+            str(nid),
+            ha="center",
+            va="center",
+            color="white",
+            fontweight="bold",
+            zorder=20,
         )
         ax.text(
             x,
