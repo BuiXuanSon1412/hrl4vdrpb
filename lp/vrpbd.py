@@ -62,8 +62,9 @@ def run(filename):
     num_customers = config["General"]["NUM_CUSTOMERS"]
     num_nodes = config["General"]["NUM_NODES"]
     MAX_COORD = config["General"]["MAX_COORD_KM"]
-    T_max = config["General"]["T_MAX_SYSTEM_H"]
+    # T_max = config["General"]["T_MAX_SYSTEM_H"]
 
+    T_max = config["Vehicles"]["DRONE_DURATION_H"]
     V_TRUCK = config["Vehicles"]["V_TRUCK_KM_H"]
     V_DRONE = config["Vehicles"]["V_DRONE_KM_H"]
     Q = config["Vehicles"]["CAPACITY_TRUCK"]
@@ -243,11 +244,8 @@ def run(filename):
 
     model += w1 * cost + w2 * spanning_time
 
-    # model += cost
-    # model += spanning_time
-
-    # for i in C:
-    #     model += spanning_time >= xi[i] + s[i] - t_end[i], f"spanning_{i}"
+    for i in C:
+        model += spanning_time >= xi[i] + s[i] - t_end[i], f"spanning_{i}"
 
     # 3
     for i in C:
@@ -260,12 +258,6 @@ def run(filename):
             model += pl.lpSum(
                 [y_tilde[k, r, i, j] for i in N for j in N_end if i != j]
             ) <= M * pl.lpSum([lambda_var[k, r, i] for i in N])
-
-    for k in K:
-        for r in R:
-            for i in C:
-                model += pl.lpSum([y_tilde[k, r, i, j] for j in N_end if i != j]) <= 1
-                model += pl.lpSum([y_tilde[k, r, j, i] for j in N if i != j]) <= 1
 
     # 4-5
     for k in K:
@@ -292,40 +284,22 @@ def run(filename):
             for i in C:
                 model += lambda_var[k, r, i] <= x[k, i]
                 model += varrho[k, r, i] <= x[k, i]
-
-    # 9
-    for k in K:
-        for r in R:
-            for i in N:
-                for j in N_end:
-                    if i != j:
-                        model += z_tilde[k, r, i] <= z_tilde[k, r, j] + M * (
-                            1 - varrho[k, r, j]
-                        )
-
     # 9-13
     for k in K:
         for r in R:
-            for i in C:
-                model += (
-                    pl.lpSum([y_tilde[k, r, j, i] for j in N if i != j])
-                    == x_tilde[k, i]
-                )
-                model += (
-                    pl.lpSum([y_tilde[k, r, i, j] for j in N_end if i != j])
-                    == x_tilde[k, i]
-                )
-                # model += pl.lpSum([y_tilde[k, r, j, i] for j in N if i != j]) - pl.lpSum([y_tilde[k, r, i, j] for j in N_end if i != j]) == varrho[k, r, i] - lambda_var[k, r, i]
             for i in N:
-                model += (
-                    pl.lpSum([y_tilde[k, r, i, j] for j in N_end if i != j])
-                    == lambda_var[k, r, i] + x_tilde[k, i]
-                )
-            for i in N_end:
-                model += (
-                    pl.lpSum([y_tilde[k, r, j, i] for j in N if i != j])
-                    == varrho[k, r, i] + x_tilde[k, i]
-                )
+                model += pl.lpSum([y_tilde[k, r, j, i] for j in N if i != j]) - x_tilde[
+                    k, i
+                ] <= M * (lambda_var[k, r, i] + varrho[k, r, i])
+                model += pl.lpSum([y_tilde[k, r, j, i] for j in N if i != j]) - x_tilde[
+                    k, i
+                ] >= -M * (lambda_var[k, r, i] + varrho[k, r, i])
+                model += pl.lpSum(
+                    [y_tilde[k, r, i, j] for j in N_end if i != j]
+                ) - x_tilde[k, i] <= M * (lambda_var[k, r, i] + varrho[k, r, i])
+                model += pl.lpSum(
+                    [y_tilde[k, r, i, j] for j in N_end if i != j]
+                ) - x_tilde[k, i] >= -M * (lambda_var[k, r, i] + varrho[k, r, i])
 
     # 14-15
     for k in K:
@@ -361,18 +335,8 @@ def run(filename):
             for i in N:
                 for j in N_end:
                     if i != j:
-                        model += z[k, i] - z[k, j] + 1 <= M * (
-                            2 - lambda_var[k, r, i] - varrho[k, r, j]
-                        )
-                        model += z[k, i] - z[k, j] + 1 >= -M * (
-                            2 - lambda_var[k, r, i] - varrho[k, r, j]
-                        )
-
-    for k in K:
-        for r in R:
-            for i in N:
-                for j in N_end:
-                    if i != j:
+                        model += z[k, i] - z[k, j] + 1 <= M * (1 - y[k, i, j])
+                        model += z[k, i] - z[k, j] + 1 >= -M * (1 - y[k, i, j])
                         model += z_tilde[k, r, i] - z_tilde[k, r, j] + 1 <= M * (
                             1 - y_tilde[k, r, i, j]
                         )
@@ -648,6 +612,7 @@ def run(filename):
         for k, v in p.items():
             print(f"\t {k, pl.value(v)}")
 
+        print(pl.value(spanning_time))
         for k in K:
             route = [0]
             current = 0
@@ -786,4 +751,3 @@ def run(filename):
 
 for file in files:
     run(file)
-
