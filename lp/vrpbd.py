@@ -381,7 +381,7 @@ def run(filename):
                     continue
                 if i != j:
                     load_change = (
-                        -q[j] * x[k, j]
+                        -q[j]
                         - pl.lpSum([Z_lambda[k, r, j] for r in R])
                         + pl.lpSum([Z_varrho[k, r, j] for r in R])
                     )
