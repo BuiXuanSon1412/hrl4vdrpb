@@ -81,6 +81,6 @@ Các bộ dữ liệu với **Depot ở Góc (C)** thường tạo ra các tuy�
 
 ## Guide
 ```bash
-python vrpbd.py --filename S042_N5_C_3G_R50.json
+python generate.py 
 ```
 ```
