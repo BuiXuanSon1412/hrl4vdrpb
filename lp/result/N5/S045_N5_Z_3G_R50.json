@@ -1,7 +1,7 @@
 {
   "weights": {
-    "cost": 1.0,
-    "makespan": 0.0,
+    "cost": 0.0,
+    "makespan": 1.0,
     "wait": 0.0
   },
   "objective": 181.87,
