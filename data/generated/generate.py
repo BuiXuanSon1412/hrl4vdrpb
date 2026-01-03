@@ -289,7 +289,10 @@ if __name__ == "__main__":
         description="Script sinh hàng loạt dữ liệu VRPBTW tối giản."
     )
     parser.add_argument(
-        "config_path", type=str, help="Đường dẫn đến file cấu hình JSON."
+        "--config_path",
+        default="config.json",
+        type=str,
+        help="Đường dẫn đến file cấu hình JSON.",
     )
     parser.add_argument(
         "--output_dir",
@@ -301,7 +304,7 @@ if __name__ == "__main__":
     parser.add_argument(
         "--seed_start",
         type=int,
-        default=101,
+        default=42,
         help="Seed ngẫu nhiên bắt đầu. Sau mỗi instance sẽ tăng lên 1. Mặc định: 42",
     )
     parser.add_argument(

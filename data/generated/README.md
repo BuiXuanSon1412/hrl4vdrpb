@@ -77,3 +77,10 @@ Là một danh sách các đối tượng, mỗi đối tượng đại diện c
 | **$\{K\}G$** | K-Gaussian (Đa cụm) | Khách hàng được nhóm thành $K$ cụm. Số cụm $K$ được xác định tự động: 3 (N≤50), 5 (N≤100), 8 (N>100).  |
 
 Các bộ dữ liệu với **Depot ở Góc (C)** thường tạo ra các tuyến đường dài hơn, ít tối ưu hóa khoảng cách hơn so với các bộ dữ liệu **Depot ở Trung tâm (Z)**.
+
+
+## Guide
+```bash
+python vrpbd.py --filename S042_N5_C_3G_R50.json
+```
+```
