@@ -257,7 +257,9 @@ def run(filename):
     # 3
     for i in C:
         model += (
-            pl.lpSum([x[k, i] for k in K]) + pl.lpSum([x_tilde[k, r, i] for k in K for r in R]) == 1
+            pl.lpSum([x[k, i] for k in K])
+            + pl.lpSum([x_tilde[k, r, i] for k in K for r in R])
+            == 1
         )
 
     for k in K:
@@ -314,7 +316,9 @@ def run(filename):
                 ) - x_tilde[k, r, i] <= M_node * (lambda_var[k, r, i] + varrho[k, r, i])
                 model += pl.lpSum(
                     [y_tilde[k, r, i, j] for j in N_end if i != j]
-                ) - x_tilde[k, r, i] >= -M_node * (lambda_var[k, r, i] + varrho[k, r, i])
+                ) - x_tilde[k, r, i] >= -M_node * (
+                    lambda_var[k, r, i] + varrho[k, r, i]
+                )
 
             model += varrho[k, r, 0] == 0
             # model += lambda_var[k, r, end_depot_idx] == 0
@@ -364,10 +368,11 @@ def run(filename):
     # 22-23
     for k in K:
         model += p[k, 0] == pl.lpSum([q[u] * x[k, u] for u in L]) + pl.lpSum(
-            [q[u] * x_tilde[k, r, u] for u in L for r in R] - pl.lpSum(Z_lambda[k, r, 0] for r in R)
+            [q[u] * x_tilde[k, r, u] for u in L for r in R]
+            - pl.lpSum(Z_lambda[k, r, 0] for r in R)
         )
         model += p[k, end_depot_idx] == -pl.lpSum(
-           [q[u] * x[k, u] for u in B]
+            [q[u] * x[k, u] for u in B]
         ) - pl.lpSum([q[u] * x_tilde[k, r, u] for u in B for r in R])
 
     # 24-25
@@ -464,7 +469,10 @@ def run(filename):
         for i in C:
             model += xi[i] >= a[k, i] - M_T * (1 - x[k, i])
             # model += xi[i] <= a[k, i] + M_T * (1 - x[k, i])
-            model += xi[i] >= a_tilde[k, i] + tau_r - M_T * (1 - x_tilde[k, r, i])
+    for k in K:
+        for r in R:
+            for i in C:
+                model += xi[i] >= a_tilde[k, i] + tau_r - M_T * (1 - x_tilde[k, r, i])
             # model += xi[i] <= a_tilde[k, i] + tau_r + M_T * (1 - x_tilde[k, r, i])
 
     # 46-47
@@ -481,8 +489,12 @@ def run(filename):
             for i in N:
                 for j in N_end:
                     if i != j:
-                        model += a_tilde[k, j] >= b_tilde[k, i] + tau_l + t_tilde[i][j] - M_T * (1 - y_tilde[k, r, i, j])
-                        model += a_tilde[k, j] <= b_tilde[k, i] + tau_l + t_tilde[i][j] + M_T * (1 - y_tilde[k, r, i, j])
+                        model += a_tilde[k, j] >= b_tilde[k, i] + tau_l + t_tilde[i][
+                            j
+                        ] - M_T * (1 - y_tilde[k, r, i, j])
+                        model += a_tilde[k, j] <= b_tilde[k, i] + tau_l + t_tilde[i][
+                            j
+                        ] + M_T * (1 - y_tilde[k, r, i, j])
 
     # 50
     for k in K:
@@ -502,10 +514,10 @@ def run(filename):
                 model += b_tilde[k, i] >= xi[i] + s[i] - M_T * (1 - x_tilde[k, r, i])
 
     # 53
-    for k in K:
-        for r in R:
-            for i in N_end:
-                model += b_tilde[k, i] + tau_r <= a[k, i] + M_T * (1 - varrho[k, r, i])
+    # for k in K:
+    #    for r in R:
+    #        for i in N_end:
+    #            model += b_tilde[k, i] + tau_r <= a[k, i] + M_T * (1 - varrho[k, r, i])
 
     # 54-55
     for k in K:
@@ -541,9 +553,11 @@ def run(filename):
                     if i != j
                 ]
             )
-            launch_time = pl.lpSum([x_tilde[k, r, i] * tau_l for i in N])
-            land_time = pl.lpSum([x_tilde[k, r, j] * tau_r for j in N_end])
-            service_time = pl.lpSum([x_tilde[k, r, i] * s[i] for i in C])
+            launch_time = pl.lpSum([lambda_var[k, r, i] * tau_l for i in N])
+            land_time = pl.lpSum([varrho[k, r, j] * tau_r for j in N_end])
+            service_time = pl.lpSum(
+                [x_tilde[k, r, i] * (tau_l + tau_r + s[i]) for i in C]
+            )
             wait_time = pl.lpSum([h[k, r, i] for i in N])
 
             total_time = (
