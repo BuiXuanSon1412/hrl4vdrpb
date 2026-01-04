@@ -264,7 +264,7 @@ def run(filename):
         for r in R:
             model += pl.lpSum(
                 [y_tilde[k, r, i, j] for i in N for j in N_end if i != j]
-            ) <= M_edge * pl.lpSum([lambda_var[k, r, i] for i in N])
+            ) <= M * pl.lpSum([lambda_var[k, r, i] for i in N])
 
     for k in K:
         for r in R:
