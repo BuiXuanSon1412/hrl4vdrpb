@@ -463,9 +463,9 @@ def run(filename):
     for k in K:
         for i in C:
             model += xi[i] >= a[k, i] - M_T * (1 - x[k, i])
-            model += xi[i] <= a[k, i] + M_T * (1 - x[k, i])
+            # model += xi[i] <= a[k, i] + M_T * (1 - x[k, i])
             model += xi[i] >= a_tilde[k, i] + tau_r - M_T * (1 - x_tilde[k, r, i])
-            model += xi[i] <= a_tilde[k, i] + tau_r + M_T * (1 - x_tilde[k, r, i])
+            # model += xi[i] <= a_tilde[k, i] + tau_r + M_T * (1 - x_tilde[k, r, i])
 
     # 46-47
     for k in K:
@@ -473,6 +473,7 @@ def run(filename):
             for j in N_end:
                 if i != j:
                     model += a[k, j] >= b[k, i] + t[i][j] - M_T * (1 - y[k, i, j])
+                    model += a[k, j] <= b[k, i] + t[i][j] + M_T * (1 - y[k, i, j])
 
     # 48-49
     for k in K:
