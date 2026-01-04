@@ -156,8 +156,8 @@ def run(filename):
     M_edge = M_node * M_node
     M_T = T_max + 1
 
-    w1 = 1.0
-    w2 = 0.0
+    w1 = 0.0
+    w2 = 1.0
 
     model = pl.LpProblem("VRPBD", pl.LpMinimize)
 
