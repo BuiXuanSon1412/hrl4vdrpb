@@ -254,7 +254,7 @@ def run(filename):
     for i in C:
         model += tardiness >= xi[i] + s[i] - t_end[i], f"tardiness_{i}"
 
-    # 3
+    # 3: Each customer is served once
     for i in C:
         model += (
             pl.lpSum([x[k, i] for k in K])
@@ -262,27 +262,33 @@ def run(filename):
             == 1
         )
 
+    # if no launching node, no edge are traversed
     for k in K:
         for r in R:
             model += pl.lpSum(
                 [y_tilde[k, r, i, j] for i in N for j in N_end if i != j]
-            ) <= M_edge * pl.lpSum([lambda_var[k, r, i] for i in N])
+            ) <= M * pl.lpSum([lambda_var[k, r, i] for i in N])
 
+    # no launching and landing at the same node
     for k in K:
         for r in R:
             for i in C:
                 model += lambda_var[k, r, i] + varrho[k, r, i] <= 1
-    # 4-5
+
+    # 4-5: ensure only one edge from 0 and one edge ended at 'end_depot_idx'
     for k in K:
         model += pl.lpSum([y[k, 0, j] for j in C]) <= 1
         model += pl.lpSum([y[k, i, end_depot_idx] for i in C]) <= 1
 
+    # flow preservation of truck-served node
     for k in K:
         for i in C:
             model += pl.lpSum([y[k, j, i] for j in N if j != i]) == x[k, i]
             model += pl.lpSum([y[k, i, j] for j in N_end if j != i]) == x[k, i]
 
-    # 6-7
+    # one launching node per drone trip
+    # one landing node per drone trip
+    # if launching node exists, landing also must exist
     for k in K:
         for r in R:
             model += pl.lpSum([lambda_var[k, r, i] for i in N]) <= 1
@@ -291,6 +297,8 @@ def run(filename):
                 [varrho[k, r, j] for j in N_end]
             )
 
+    # launching node is truck node and outgoing truck node
+    # landing node is drone node and ingoing drone node
     # 8
     for k in K:
         for r in R:
@@ -298,30 +306,6 @@ def run(filename):
                 model += lambda_var[k, r, i] <= x[k, i]
                 model += varrho[k, r, i] <= x[k, i]
 
-    # 9-13
-    for k in K:
-        for r in R:
-            for i in C:
-                model += pl.lpSum([y_tilde[k, r, j, i] for j in N if i != j]) - x_tilde[
-                    k, r, i
-                ] <= M_node * (lambda_var[k, r, i] + varrho[k, r, i])
-                model += pl.lpSum([y_tilde[k, r, j, i] for j in N if i != j]) - x_tilde[
-                    k, r, i
-                ] >= -M_node * (lambda_var[k, r, i] + varrho[k, r, i])
-    for k in K:
-        for r in R:
-            for i in N:
-                model += pl.lpSum(
-                    [y_tilde[k, r, i, j] for j in N_end if i != j]
-                ) - x_tilde[k, r, i] <= M_node * (lambda_var[k, r, i] + varrho[k, r, i])
-                model += pl.lpSum(
-                    [y_tilde[k, r, i, j] for j in N_end if i != j]
-                ) - x_tilde[k, r, i] >= -M_node * (
-                    lambda_var[k, r, i] + varrho[k, r, i]
-                )
-
-            model += varrho[k, r, 0] == 0
-            model += lambda_var[k, r, end_depot_idx] == 0
     # 14-15
     for k in K:
         for r in R:
@@ -335,7 +319,6 @@ def run(filename):
                     + pl.lpSum([y_tilde[k, r, i, j] for j in N_end if j != i])
                     - 1
                 )
-
     # 16-17
     for k in K:
         for r in R:
@@ -350,32 +333,62 @@ def run(filename):
                     - 1
                 )
 
-    # 18-21
+    # flow preservation of drone-served node
+    # 9-13
+    for k in K:
+        for r in R:
+            for i in C:
+                model += pl.lpSum([y_tilde[k, r, j, i] for j in N if i != j]) - x_tilde[
+                    k, r, i
+                ] <= M_node * (lambda_var[k, r, i] + varrho[k, r, i])
+                model += pl.lpSum([y_tilde[k, r, j, i] for j in N if i != j]) - x_tilde[
+                    k, r, i
+                ] >= -M_node * (lambda_var[k, r, i] + varrho[k, r, i])
+
+    for k in K:
+        for r in R:
+            for i in N:
+                model += pl.lpSum(
+                    [y_tilde[k, r, i, j] for j in N_end if i != j]
+                ) - x_tilde[k, r, i] <= M_node * (lambda_var[k, r, i] + varrho[k, r, i])
+                model += pl.lpSum(
+                    [y_tilde[k, r, i, j] for j in N_end if i != j]
+                ) - x_tilde[k, r, i] >= -M_node * (
+                    lambda_var[k, r, i] + varrho[k, r, i]
+                )
+
+            model += varrho[k, r, 0] == 0
+            model += lambda_var[k, r, end_depot_idx] == 0
+
+    # 18-21:
+    # MTZ avoidance of truck and drone
     for k in K:
         for r in R:
             for i in N:
                 for j in N_end:
                     if i != j:
-                        model += z[k, i] - z[k, j] + 1 <= M_node * (1 - y[k, i, j])
-                        model += z[k, i] - z[k, j] + 1 >= -M_node * (1 - y[k, i, j])
-                        model += z_tilde[k, r, i] - z_tilde[k, r, j] + 1 <= M_node * (
+                        model += z[k, i] - z[k, j] + 1 <= M * (1 - y[k, i, j])
+                        model += z[k, i] - z[k, j] + 1 >= -M * (1 - y[k, i, j])
+                        model += z_tilde[k, r, i] - z_tilde[k, r, j] + 1 <= M * (
                             1 - y_tilde[k, r, i, j]
                         )
-                        model += z_tilde[k, r, i] - z_tilde[k, r, j] + 1 >= -M_node * (
+                        model += z_tilde[k, r, i] - z_tilde[k, r, j] + 1 >= -M * (
                             1 - y_tilde[k, r, i, j]
                         )
 
     # 22-23
+    # truck payload at starting depot and returning depot
     for k in K:
         model += p[k, 0] == pl.lpSum([q[u] * x[k, u] for u in L]) + pl.lpSum(
-            [q[u] * x_tilde[k, r, u] for r in R for u in L]
+            [q[u] * x_tilde[k, r, u] for u in L for r in R]
             - pl.lpSum(Z_lambda[k, r, 0] for r in R)
         )
-        # model += p[k, end_depot_idx] == -pl.lpSum(
-        #    [q[u] * x[k, u] for u in B]
-        # ) - pl.lpSum([q[u] * x_tilde[k, u] for u in B])
+        model += p[k, end_depot_idx] == -pl.lpSum(
+            [q[u] * x[k, u] for u in B]
+        ) - pl.lpSum([q[u] * x_tilde[k, r, u] for u in B for r in R])
 
     # 24-25
+    # payload difference between two consecutive nodes
     for k in K:
         for i in N:
             for j in N_end:
@@ -383,19 +396,21 @@ def run(filename):
                     continue
                 if i != j:
                     load_change = (
-                        -q[j] * x[k, j]
+                        -q[j]
                         - pl.lpSum([Z_lambda[k, r, j] for r in R])
                         + pl.lpSum([Z_varrho[k, r, j] for r in R])
                     )
                     model += p[k, j] <= p[k, i] + load_change + M_Q * (1 - y[k, i, j])
                     model += p[k, j] >= p[k, i] + load_change - M_Q * (1 - y[k, i, j])
 
+    # lower bound and upper bound of truck payload at each node
     for k in K:
         for i in N_all:
             model += p[k, i] <= Q
             model += p[k, i] >= 0
 
     # 26-35
+    # carried load by drone at launching node
     for k in K:
         for r in R:
             for j in N:
@@ -406,6 +421,8 @@ def run(filename):
                 model += Z_lambda[k, r, j] >= p_tilde[k, r, j] - Q_tilde * (
                     1 - lambda_var[k, r, j]
                 )
+
+    # carried load by drone at landing node
     for k in K:
         for r in R:
             for j in N_end:
@@ -418,6 +435,7 @@ def run(filename):
                 )
 
     # 36-37
+    # load of drone at launching node
     for k in K:
         for r in R:
             drone_pickup = pl.lpSum([q[u] * x_tilde[k, r, u] for u in L])
@@ -430,6 +448,7 @@ def run(filename):
                 )
 
     # 38-39
+    # load of drone at landing node
     for k in K:
         for r in R:
             drone_delivery = pl.lpSum([q[u] * x_tilde[k, r, u] for u in B])
@@ -442,6 +461,7 @@ def run(filename):
                 )
 
     # 40-41
+    # load difference between 2 consecutive drone nodes
     for k in K:
         for r in R:
             for i in N:
@@ -455,6 +475,7 @@ def run(filename):
                         ] - M_Q_tilde * (1 - y_tilde[k, r, i, j])
 
     # 42
+    # lower bound and upper bound of drone load
     for k in K:
         for r in R:
             for i in N + [end_depot_idx]:
@@ -462,25 +483,34 @@ def run(filename):
                 model += p_tilde[k, r, i] >= 0
 
     # 43-45
+    # customer must be served after lower bound of time window
     for i in C:
         model += xi[i] >= t_start[i]
 
+    # truck customer must be served between [arrival, departure] of truck
+    for k in K:
+        for i in C:
+            model += xi[i] >= a[k, i] - M_T * (1 - x[k, i])
+            model += xi[i] <= b[k, i] - s[i] + M_T * (1 - x[k, i])
+
+    # drone customer must be served between [arrival + landing, departure - service]
     for k in K:
         for r in R:
             for i in C:
-                model += xi[i] >= a[k, i] - M_T * (1 - x[k, i])
-                model += xi[i] <= a[k, i] + M_T * (1 - x[k, i])
                 model += xi[i] >= a_tilde[k, i] + tau_r - M_T * (1 - x_tilde[k, r, i])
-                model += xi[i] <= a_tilde[k, i] + tau_r + M_T * (1 - x_tilde[k, r, i])
+                model += xi[i] <= b_tilde[k, i] - s[i] + M_T * (1 - x_tilde[k, r, i])
 
     # 46-47
+    # arrival and depart difference of two consecutive truck-served node
     for k in K:
         for i in N:
             for j in N_end:
                 if i != j:
                     model += a[k, j] >= b[k, i] + t[i][j] - M_T * (1 - y[k, i, j])
+                    model += a[k, j] <= b[k, i] + t[i][j] + M_T * (1 - y[k, i, j])
 
     # 48-49
+    # arrival and depart difference of two consecutive drone-served node
     for k in K:
         for r in R:
             for i in N:
@@ -493,30 +523,21 @@ def run(filename):
                             j
                         ] + M_T * (1 - y_tilde[k, r, i, j])
 
-    # 50
-    for k in K:
-        for i in C:
-            model += b[k, i] >= xi[i] + s[i] - M_T * (1 - x[k, i])
-
     # 51
+    # launching time must be between [arrival, departure] of truck at launching node
     for k in K:
         for r in R:
             for i in N:
-                model += b[k, i] >= b_tilde[k, i] - M_T * (1 - lambda_var[k, r, i])
-
+                model += b_tilde[k, i] >= a[k, i] - M_T * (1 - lambda_var[k, r, i])
+                model += b_tilde[k, i] <= b[k, i] + M_T * (1 - lambda_var[k, r, i])
     # 52
-    for k in K:
-        for r in R:
-            for i in C:
-                model += b_tilde[k, i] >= xi[i] + s[i] - M_T * (1 - x_tilde[k, r, i])
-
-    # 53
-    for k in K:
-        for r in R:
-            for i in N_end:
-                model += b_tilde[k, i] + tau_r <= a[k, i] + M_T * (1 - varrho[k, r, i])
+    # for k in K:
+    #    for r in R:
+    #        for i in C:
+    #            model += b_tilde[k, i] >= xi[i] + s[i] - M_T * (1 - x_tilde[k, r, i])
 
     # 54-55
+    # landing time must be between [arrival, departure] of truck at landing node
     for k in K:
         for r in R:
             for j in N_end:
@@ -528,6 +549,7 @@ def run(filename):
                 )
 
     # 56-58
+    # waiting time of drone at served node equals = served - (arrival + landing)
     for k in K:
         for r in R:
             for i in C:
@@ -540,6 +562,7 @@ def run(filename):
                 model += h[k, r, i] >= 0
 
     # 59
+    # each drone trip has duration limitation
     for k in K:
         for r in R:
             flight_time = pl.lpSum(
@@ -550,9 +573,11 @@ def run(filename):
                     if i != j
                 ]
             )
-            launch_time = pl.lpSum([x_tilde[k, r, i] * tau_l for i in N])
-            land_time = pl.lpSum([x_tilde[k, r, j] * tau_r for j in N_end])
-            service_time = pl.lpSum([x_tilde[k, r, i] * s[i] for i in C])
+            launch_time = pl.lpSum([lambda_var[k, r, i] * tau_l for i in N])
+            land_time = pl.lpSum([varrho[k, r, j] * tau_r for j in N_end])
+            service_time = pl.lpSum(
+                [x_tilde[k, r, i] * (tau_l + tau_r + s[i]) for i in C]
+            )
             wait_time = pl.lpSum([h[k, r, i] for i in N])
 
             total_time = (
@@ -561,11 +586,14 @@ def run(filename):
             model += total_time <= T_tilde_max
 
     # 76-77
+    # consider sequential index in truck node:
+    # + landing node of (k, r) <= launching node of (k, r+1)
+    # + lauching time of (k, r+1) >= landing time of (k, r)
     for k in K:
         for r in R[:-1]:
             for i in N_end:
                 for j in N:
-                    model += z[k, j] >= z[k, i] - M_node * (
+                    model += z[k, j] >= z[k, i] - M * (
                         2 - varrho[k, r, i] - lambda_var[k, r + 1, j]
                     )
 
@@ -576,6 +604,7 @@ def run(filename):
                     )
 
     # 78
+    # drone trip (k, r) must be specified before (k, r+1)
     for k in K:
         for r in R[:-1]:
             model += pl.lpSum(lambda_var[k, r + 1, i] for i in N) <= pl.lpSum(
@@ -583,6 +612,7 @@ def run(filename):
             )
 
     # 79
+    # drone 'k' must be used with truck 'k'
     for k in K:
         for r in R:
             model += pl.lpSum(lambda_var[k, r, i] for i in N) <= pl.lpSum(
@@ -590,8 +620,28 @@ def run(filename):
             )
 
     # 80
+    # truck 'k' must be specified before truck 'k+1'
     for k in K[:-1]:
         model += pl.lpSum(y[k, 0, j] for j in C) >= pl.lpSum(y[k + 1, 0, j] for j in C)
+
+    # consider sequential index in truck node:
+    # landing node (k, r) >= launching node (k, r)
+    for k in K:
+        for r in R:
+            for i in N_end:
+                for j in N:
+                    model += z[k, j] >= z[k, i] - M * (
+                        2 - lambda_var[k, r, i] - varrho[k, r, j]
+                    )
+
+    for k in K:
+        for r in R:
+            for i in N:
+                for j in N_end:
+                    if i != j:
+                        model += y_tilde[k, r, i, j] <= M * (
+                            2 - lambda_var[k, r, i] - varrho[k, r, j]
+                        )
 
     print(
         f"Model created with {len(model.variables())} variables and {len(model.constraints)} constraints"
