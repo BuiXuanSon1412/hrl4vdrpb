@@ -277,7 +277,9 @@ def run(filename):
             for i in N:
                 for j in N_end:
                     if i != j:
-                        model += y_tilde[k, r, i, j] <= pl.lpSum(x_tilde[k, r, h] for h in C)
+                        model += y_tilde[k, r, i, j] <= pl.lpSum(
+                            x_tilde[k, r, h] for h in C
+                        )
 
     # 4-5
     for k in K:
@@ -377,7 +379,9 @@ def run(filename):
             for i in N:
                 for j in N_end:
                     if i != j:
-                        model += z[k, j] >= z[k, i] + 1 - M * (2 - lambda_var[k, r, i] - varrho[k, r, j])
+                        model += z[k, j] >= z[k, i] + 1 - M * (
+                            2 - lambda_var[k, r, i] - varrho[k, r, j]
+                        )
 
     # 22-23
     for k in K:
@@ -520,7 +524,7 @@ def run(filename):
         for r in R:
             for i in N:
                 model += b[k, i] >= b_tilde[k, i] - M_T * (1 - lambda_var[k, r, i])
-
+                model += b_tilde[k, i] >= a[k, i] - M_T * (1 - lambda_var[k, r, i])
     # 52
     for k in K:
         for r in R:

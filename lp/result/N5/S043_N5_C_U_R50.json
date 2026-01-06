@@ -1,9 +1,9 @@
 {
   "weights": {
     "cost": 0.0,
-    "makespan": 1.0,
-    "wait": 0.0
+    "tardiness": 1.0
   },
+  "status": "Optimal",
   "objective": 0.0,
   "routes": [
     {
@@ -33,6 +33,15 @@
         4.08,
         10.96,
         16.2,
+        null
+      ],
+      "service": [
+        null,
+        1.81,
+        2.42,
+        4.0,
+        10.88,
+        16.12,
         null
       ],
       "trips": []
