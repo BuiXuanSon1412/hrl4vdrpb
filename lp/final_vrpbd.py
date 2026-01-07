@@ -612,9 +612,10 @@ def run(filename):
 
     solver = pl.PULP_CBC_CMD(timeLimit=36000, gapRel=0.05, msg=True)
 
-    # start_time = time.time()
+    start_time = time.time()
     model.solve(solver)
-    # end_time = time.time()
+    running_time = time.time() - start_time
+
     if model.status == pl.LpStatusOptimal or model.status == pl.LpStatusNotSolved:
         result_data = {
             "weights": {
@@ -622,7 +623,8 @@ def run(filename):
                 "tardiness": w2,
             },
             "status": pl.LpStatus[model.status],
-            "objective": round(pl.value(model.objective), 2),
+            "objective": pl.value(model.objective),
+            "time": running_time,
             "routes": [],
         }
 
@@ -685,17 +687,15 @@ def run(filename):
                     "id": int(k),
                     "route": route,
                     "arrival": [
-                        round(pl.value(a[k, i]), 2) if idx > 0 else None
+                        pl.value(a[k, i]) if idx > 0 else None
                         for idx, i in enumerate(route)
                     ],
                     "departure": [
-                        round(pl.value(b[k, i]), 2) if idx < len(route) - 1 else None
+                        pl.value(b[k, i]) if idx < len(route) - 1 else None
                         for idx, i in enumerate(route)
                     ],
                     "service": [
-                        round(pl.value(xi[i]), 2)
-                        if idx < len(route) - 1 and idx > 0
-                        else None
+                        pl.value(xi[i]) if idx < len(route) - 1 and idx > 0 else None
                         for idx, i in enumerate(route)
                     ],
                     "trips": [],
@@ -742,17 +742,17 @@ def run(filename):
                             "id": int(r),
                             "route": drone_route,
                             "arrival": [
-                                round(pl.value(a_tilde[k, i]), 2) if idx > 0 else None
+                                pl.value(a_tilde[k, i]) if idx > 0 else None
                                 for idx, i in enumerate(drone_route)
                             ],
                             "departure": [
-                                round(pl.value(b_tilde[k, i]), 2)
+                                pl.value(b_tilde[k, i])
                                 if idx < len(drone_route) - 1
                                 else None
                                 for idx, i in enumerate(drone_route)
                             ],
                             "service": [
-                                round(pl.value(xi[i]), 2)
+                                pl.value(xi[i])
                                 if idx < len(drone_route) - 1 and idx > 0
                                 else None
                                 for idx, i in enumerate(drone_route)
