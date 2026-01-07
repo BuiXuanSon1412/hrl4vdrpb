@@ -1,0 +1,168 @@
+{
+    "Config": {
+        "General": {
+            "NUM_CUSTOMERS": 10,
+            "NUM_NODES": 11,
+            "MAX_COORD_KM": 100,
+            "T_MAX_SYSTEM_H": 12.0,
+            "TIME_WINDOW_SCALING_FACTOR": 1.5,
+            "COORD_DISTRIBUTION": "C",
+            "NUM_CLUSTERS": 1
+        },
+        "Vehicles": {
+            "NUM_TRUCKS": 2,
+            "NUM_DRONES": 2,
+            "V_TRUCK_KM_H": 40.0,
+            "V_DRONE_KM_H": 60.0,
+            "CAPACITY_TRUCK": 250,
+            "CAPACITY_DRONE": 50,
+            "DRONE_TAKEOFF_MIN": 1.0,
+            "DRONE_LANDING_MIN": 1.0,
+            "SERVICE_TIME_MIN": 5.0,
+            "DRONE_DURATION_H": 1.0
+        },
+        "Depot": {
+            "id": 0,
+            "coord": [
+                50.0,
+                50.0
+            ],
+            "time_window_h": [
+                0.0,
+                12.0
+            ]
+        }
+    },
+    "Nodes": [
+        {
+            "id": 1,
+            "coord": [
+                20.437480161025448,
+                25.00102586762248
+            ],
+            "demand": -14,
+            "type": "BACKHAUL",
+            "tw_h": [
+                5.5318,
+                6.8303
+            ]
+        },
+        {
+            "id": 2,
+            "coord": [
+                18.997941114688075,
+                34.69386278716933
+            ],
+            "demand": 36,
+            "type": "LINEHAUL",
+            "tw_h": [
+                3.7247,
+                5.1667
+            ]
+        },
+        {
+            "id": 3,
+            "coord": [
+                22.05663295480956,
+                24.89620636941085
+            ],
+            "demand": -25,
+            "type": "BACKHAUL",
+            "tw_h": [
+                7.5639,
+                9.0996
+            ]
+        },
+        {
+            "id": 4,
+            "coord": [
+                15.619435204784343,
+                28.474344435110375
+            ],
+            "demand": 8,
+            "type": "LINEHAUL",
+            "tw_h": [
+                2.3989,
+                3.9166
+            ]
+        },
+        {
+            "id": 5,
+            "coord": [
+                10.330535948684417,
+                23.204723816842137
+            ],
+            "demand": 33,
+            "type": "LINEHAUL",
+            "tw_h": [
+                3.9789,
+                5.0476
+            ]
+        },
+        {
+            "id": 6,
+            "coord": [
+                18.97683016923391,
+                26.155812212299445
+            ],
+            "demand": -26,
+            "type": "BACKHAUL",
+            "tw_h": [
+                7.1879,
+                8.2635
+            ]
+        },
+        {
+            "id": 7,
+            "coord": [
+                24.745731926340312,
+                24.179295176943835
+            ],
+            "demand": -14,
+            "type": "BACKHAUL",
+            "tw_h": [
+                5.4167,
+                6.6912
+            ]
+        },
+        {
+            "id": 8,
+            "coord": [
+                12.817830831878716,
+                23.09459544224058
+            ],
+            "demand": -13,
+            "type": "BACKHAUL",
+            "tw_h": [
+                2.5601,
+                3.6038
+            ]
+        },
+        {
+            "id": 9,
+            "coord": [
+                17.061348925527458,
+                26.009747052218255
+            ],
+            "demand": 11,
+            "type": "LINEHAUL",
+            "tw_h": [
+                1.5662,
+                3.1419
+            ]
+        },
+        {
+            "id": 10,
+            "coord": [
+                25.9266253720667,
+                25.056602922779295
+            ],
+            "demand": 34,
+            "type": "LINEHAUL",
+            "tw_h": [
+                3.1587,
+                4.6209
+            ]
+        }
+    ]
+}
