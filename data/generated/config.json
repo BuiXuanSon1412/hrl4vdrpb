@@ -6,14 +6,10 @@
     "DRONE_LANDING_MIN": 1.0,
     "SERVICE_TIME_MIN": 5.0,
     "DRONE_DURATION_H": 1.0,
-    "CAPACITY_MAP": {
-        "SMALL": 250,
-        "LARGE": 600,
-        "THRESHOLD": 100
-    },
-    "CAPACITY_DRONE": 50,
-    "DEMAND_RANGE_BACKHAUL": [-50, -1],
-    "DEMAND_RANGE_LINEHAUL": [1, 50],
+    "CAPACITY_TRUCK": 200,
+    "CAPACITY_DRONE": 20,
+    "DEMAND_RANGE_BACKHAUL": [-30, -1],
+    "DEMAND_RANGE_LINEHAUL": [1, 30],
     "TIME_WINDOW_SCALING_FACTOR": 1.5,
     "FLEET_SIZES": {
         "10": 2,

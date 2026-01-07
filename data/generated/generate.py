@@ -75,11 +75,6 @@ def create_instance(config, n, dist_type, ratio, seed):
     # Standard 12-hour operational window for research benchmarks
     t_max_system = 12.0
 
-    capacity_truck = (
-        config["CAPACITY_MAP"]["LARGE"]
-        if n >= config["CAPACITY_MAP"]["THRESHOLD"]
-        else config["CAPACITY_MAP"]["SMALL"]
-    )
     num_trucks = config["FLEET_SIZES"].get(str(n), max(1, n // 8))
 
     nodes = []
@@ -137,7 +132,7 @@ def create_instance(config, n, dist_type, ratio, seed):
                 "NUM_DRONES": num_trucks,
                 "V_TRUCK_KM_H": config["V_TRUCK_KM_H"],
                 "V_DRONE_KM_H": config["V_DRONE_KM_H"],
-                "CAPACITY_TRUCK": capacity_truck,
+                "CAPACITY_TRUCK": config["CAPACITY_TRUCK"],
                 "CAPACITY_DRONE": config["CAPACITY_DRONE"],
                 "DRONE_TAKEOFF_MIN": config["DRONE_TAKEOFF_MIN"],
                 "DRONE_LANDING_MIN": config["DRONE_LANDING_MIN"],
