@@ -1,0 +1,10 @@
+{
+  "weights": {
+    "cost": 0.0,
+    "tardiness": 1.0
+  },
+  "status": "Not Solved",
+  "objective": 0.0,
+  "time": 35996.01401424408,
+  "routes": []
+}
