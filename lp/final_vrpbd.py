@@ -263,14 +263,14 @@ def run(filename):
             == 1
         )
 
-    # if no launching node, no edge are traversed
+    # 10 if no launching node, no edge are traversed
     for k in K:
         for r in R:
             model += pl.lpSum(
                 [y_tilde[k, r, i, j] for i in N for j in N_end if i != j]
             ) <= M * pl.lpSum([lambda_var[k, r, i] for i in N])
 
-    # no launching and landing at the same node
+    # 8 no launching and landing at the same node
     for k in K:
         for r in R:
             for i in C:
