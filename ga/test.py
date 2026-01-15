@@ -1,35 +1,58 @@
 import numpy as np
-from solver import split, unset, balance
+from solver import (
+    decode,
+    dronable,
+    init_population,
+    partition,
+    balance,
+    overload,
+)
 from problem import VRPBTWProblem
+import random
 
 
-def test_split():
-    data_path = "../data/generated/data/N400/S042_N400_C_R50.json"
-    problem = VRPBTWProblem(data_path=data_path)
-    num_fleet = problem.num_fleet
-    num_nodes = len(problem.nodes) - 1
+def test_init_population(num_indi, problem):
+    init_popu = init_population(num_indi, problem)
 
-    chro = []
-    nodes = np.random.permutation(np.arange(1, num_nodes + num_fleet))
-    masks = np.random.choice([0, 1], size=(num_nodes + num_fleet - 1), p=[0.8, 0.2])
-    chro = np.array([nodes, masks])
+    for indi in init_popu:
+        print(indi.chromosome)
 
-    print("initial:")
-    print(chro)
+    return init_popu
 
-    print("unset:")
-    unset(chro, problem)
-    print(chro)
 
-    print("balance:")
-    chro = balance(chro, problem)
-    print(chro)
+def test_repair(chro, problem):
+    if overload(chro, problem):
+        chro = balance(chro, problem)
 
-    print("split:")
-    seqs = split(chro, problem)
+    chro = dronable(chro, problem)
+
+    seqs = partition(chro, problem)
     for seq in seqs:
         print(seq)
 
+    return chro
+
 
 if __name__ == "__main__":
-    test_split()
+    """
+    dir = Path("../data/generated/data/N50/")
+    count = 0
+    for file in dir.rglob("S*.json"):
+        if file.is_file():
+            res = test_repair(file)
+            count += res
+
+    print("overload case: ", count)
+    """
+    random.seed(42)
+    data_path = "../data/generated/data/N10/S042_N10_C_R50.json"
+    problem = VRPBTWProblem(data_path=data_path)
+
+    init_popu = test_init_population(5, problem)
+
+    for indi in init_popu:
+        chro = test_repair(indi.chromosome, problem)
+        indi.chromosome = chro
+
+    for indi in init_popu:
+        solution = decode(indi, problem)
