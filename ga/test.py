@@ -1,3 +1,4 @@
+import enum
 import numpy as np
 from solver import (
     decode,
@@ -6,6 +7,7 @@ from solver import (
     partition,
     balance,
     overload,
+    unset,
 )
 from problem import VRPBTWProblem
 import random
@@ -14,13 +16,11 @@ import random
 def test_init_population(num_indi, problem):
     init_popu = init_population(num_indi, problem)
 
-    for indi in init_popu:
-        print(indi.chromosome)
-
     return init_popu
 
 
 def test_repair(chro, problem):
+    unset(chro, problem)
     if overload(chro, problem):
         chro = balance(chro, problem)
 
@@ -50,9 +50,25 @@ if __name__ == "__main__":
 
     init_popu = test_init_population(5, problem)
 
-    for indi in init_popu:
+    print("INITIALIZED: ")
+    for idx, indi in enumerate(init_popu):
+        print("individual ", idx)
+        print(indi.chromosome)
+
+    print("REPAIRED: ")
+    for idx, indi in enumerate(init_popu):
+        print("individual ", idx)
         chro = test_repair(indi.chromosome, problem)
         indi.chromosome = chro
 
-    for indi in init_popu:
+    print("DECODED: ")
+    for idx, indi in enumerate(init_popu):
+        print("Solution ", idx)
         solution = decode(indi, problem)
+        if not solution:
+            continue
+        routes = solution.routes
+        for idx, (route, trips) in enumerate(solution.routes):
+            print("fleet ", idx)
+            print(route)
+            print(trips)

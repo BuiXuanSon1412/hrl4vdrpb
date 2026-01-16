@@ -48,6 +48,7 @@ def partition(chro, problem):
     return seqs
 
 
+# unset mask layer if its node capacity overload the drone capacity itself
 def unset(chro, problem: VRPBTWProblem):
     demands = np.array([abs(node.demand) for node in problem.nodes])
     is_node = chro[0] < len(problem.nodes)
@@ -84,9 +85,6 @@ def calculate_route_distance(route, problem: VRPBTWProblem):
 
 
 def dronable(chro, problem: VRPBTWProblem):
-    # unset mask layer if its node capacity overload the drone capacity itself
-    unset(chro, problem)
-
     genes = chro.T.tolist()
     # two adjacent drone nodes must have same sign
     for i in range(1, len(genes)):
@@ -180,7 +178,7 @@ def gemini_schedule(
     route, trips, problem: "VRPBTWProblem"
 ) -> Tuple[Optional[Route], Optional[List[Route]], float]:
     n_truck = len(route)
-
+    n_node = len(problem.nodes)
     # Initialize Route objects
     t_route = Route(
         nodes=route,
@@ -210,12 +208,14 @@ def gemini_schedule(
             t_route.arrival[i] = float(problem.nodes[curr_node].time_window[0])
         else:
             prev_node = route[i - 1]
-            dist = problem.distance_matrix[prev_node, curr_node].item()
+            dist = problem.distance_matrix[
+                prev_node % n_node, curr_node % n_node
+            ].item()
             travel_time = dist / problem.truck_speed
             t_route.arrival[i] = t_route.departure[i - 1] + travel_time
 
         # 2. Service Time (Earliest possible start)
-        tw_start = float(problem.nodes[curr_node].time_window[0])
+        tw_start = float(problem.nodes[curr_node % n_node].time_window[0])
         t_route.service[i] = max(t_route.arrival[i], tw_start)
 
         # 3. Synchronization: Landing Drones
@@ -323,8 +323,8 @@ def routing(seq, problem: VRPBTWProblem):
         opt_trips = None
 
         # push initial state into stack
-        first = trip[0][0]
-        last = trip[0][-1]
+        first = trips[0][0]
+        last = trips[0][-1]
         for launch in range(0, first):
             for land in range(last + 1, lr_drone[last + 1]):
                 temp_trip = [launch] + trip + [land]
@@ -376,10 +376,11 @@ def decode(indi: Individual, problem: VRPBTWProblem) -> Optional[Solution]:
     return Solution(routes)
 
 
-class Solver:
+class GASolver:
     def __init__(self, problem: VRPBTWProblem, config):
         self.problem = problem
-        self.config = config
+        self.num_gen = config["num_gen"]
+        self.num_indi = config["num_indi"]
 
     def solve(self, problem):
-        pass
+        init_popu = init_population(self.num_indi, self.problem)
