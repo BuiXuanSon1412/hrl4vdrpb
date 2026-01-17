@@ -1,3 +1,4 @@
+import random
 from typing import List, Optional, Tuple
 import numpy as np
 from collections import deque
@@ -6,7 +7,8 @@ from problem import Problem, Solution, Route
 from population import Individual
 
 
-def init_population(num_indi, problem):
+def init_population(num_indi, seed, problem):
+    random.seed(seed)
     popu = []
     for _ in range(num_indi):
         chromosome = []
@@ -15,10 +17,13 @@ def init_population(num_indi, problem):
         num_nodes = len(problem.nodes) - 1
 
         chromosome = []
-        nodes = np.random.permutation(np.arange(1, num_nodes + num_fleet)).tolist()
-        mask = np.random.choice(
-            [0, 1, -1], size=(num_nodes + num_fleet - 1), p=[0.7, 0.15, 0.15]
-        ).tolist()
+
+        population = list(range(1, num_nodes + num_fleet))
+        nodes = random.sample(population, len(population))
+
+        mask = random.choices(
+            [0, 1, -1], weights=[0.7, 0.15, 0.15], k=(num_nodes + num_fleet - 1)
+        )
         chromosome = [nodes, mask]
 
         indi = Individual(chromosome)
@@ -100,7 +105,7 @@ def dronable(chro, problem: Problem):
             else:
                 # verify sum of interior edges
                 temp_trip = trip + [(chro[0][i], chro[1][i])]
-                temp_in_distance = calculate_route_distance(
+                temp_in_distance = cal_route_distance(
                     [node[0] for node in temp_trip], problem
                 )
 
@@ -303,9 +308,9 @@ def schedule(
             tardiness = max(0.0, d_trip.service[i] + problem.service_time - tw_end)
             max_tardiness = max(max_tardiness, tardiness)
 
-    total_cost = calculate_route_distance([node for node in route], problem)
+    total_cost = cal_route_distance([node for node in route], problem)
     total_cost += sum(
-        [calculate_route_distance([node for node in trip], problem) for trip in trips]
+        [cal_route_distance([node for node in trip], problem) for trip in trips]
     )
     return t_route, d_trips, max_tardiness, total_cost
 
@@ -355,7 +360,7 @@ def routing(seq, problem: Problem):
             for land in range(last + 1, lr_drone[last + 1]):
                 temp_trip = [launch] + trip + [land]
 
-                d = calculate_route_distance([nodes[idx][0] for idx in trip], problem)
+                d = cal_route_distance([nodes[idx][0] for idx in trip], problem)
                 if d <= problem.drone_speed * problem.drone_trip_duration:
                     stack.append([[temp_trip]])
 
@@ -388,7 +393,7 @@ def routing(seq, problem: Problem):
                     if nodes[land][1]:
                         break
                     temp_trip = [launch] + next_trip + [land]
-                    d = calculate_route_distance(
+                    d = cal_route_distance(
                         [nodes[idx][0] for idx in temp_trip], problem
                     )
                     if d <= problem.drone_speed * problem.drone_trip_duration:
@@ -429,7 +434,7 @@ def decode(indi: Individual, problem: Problem) -> Tuple[Solution, Solution]:
     return Solution(tardiness_routes), Solution(cost_routes)
 
 
-def calculate_route_distance(route, problem: Problem):
+def cal_route_distance(route, problem: Problem):
     n_node = len(problem.nodes)
     distance = sum(
         [
@@ -471,10 +476,10 @@ def cal_cost(solution, problem):
     cost = 0.0
 
     for route, trips in routes:
-        cost += calculate_route_distance([node for node in route.nodes], problem)
+        cost += cal_route_distance([node for node in route.nodes], problem)
         cost += sum(
             [
-                calculate_route_distance([node for node in trip.nodes], problem)
+                cal_route_distance([node for node in trip.nodes], problem)
                 for trip in trips
             ]
         )
