@@ -3,7 +3,7 @@ import numpy as np
 
 
 class Individual:
-    def __init__(self, chromosome=None):
+    def __init__(self, chromosome):
         self.chromosome = chromosome
         self.objectives = None  # Objectives vector
 
@@ -47,7 +47,7 @@ class Population:
         mutation_rate,
     ):
         offspring = []
-        for i in range(self.pop_size):
+        for _ in range(self.pop_size):
             parent1, parent2 = np.random.choice(self.indivs, 2, replace=False)
             if np.random.rand() < crossover_rate:
                 off1, off2 = crossover_operator(problem, parent1, parent2)

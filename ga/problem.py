@@ -1,23 +1,7 @@
-from typing import List, Optional, Tuple
+from typing import List, Tuple
 from dataclasses import dataclass
 import json
 import numpy as np
-
-
-def calculate_euclidean_distance_matrix(nodes):
-    coords = np.array([node.coord for node in nodes])
-    diff = coords[:, np.newaxis, :] - coords[np.newaxis, :, :]
-    distance_matrix = np.sqrt(np.sum(diff**2, axis=-1))
-
-    return distance_matrix
-
-
-def calculate_manhattan_distance_matrix(nodes):
-    coords = np.array([node.coord for node in nodes])
-    diff = coords[:, np.newaxis, :] - coords[np.newaxis, :, :]
-    distance_matrix = np.sum(np.abs(diff), axis=-1)
-
-    return distance_matrix
 
 
 @dataclass
@@ -33,7 +17,23 @@ class Node:
     id: int
     coord: Tuple[float, float]
     demand: int
-    time_window: List[Tuple[float, float]]
+    time_window: Tuple[float, float]
+
+
+def calculate_euclidean_distance_matrix(nodes: List[Node]) -> List[List[float]]:
+    coords = np.array([node.coord for node in nodes])
+    diff = coords[:, np.newaxis, :] - coords[np.newaxis, :, :]
+    distance_matrix = np.sqrt(np.sum(diff**2, axis=-1))
+
+    return distance_matrix.tolist()
+
+
+def calculate_manhattan_distance_matrix(nodes: List[Node]) -> List[List[float]]:
+    coords = np.array([node.coord for node in nodes])
+    diff = coords[:, np.newaxis, :] - coords[np.newaxis, :, :]
+    distance_matrix = np.sum(np.abs(diff), axis=-1)
+
+    return distance_matrix.tolist()
 
 
 class Solution:
@@ -41,7 +41,7 @@ class Solution:
         self.routes = routes
 
 
-class VRPBTWProblem:
+class Problem:
     nodes: List[Node]
     num_fleet: int
 
@@ -53,7 +53,7 @@ class VRPBTWProblem:
 
     truck_speed: float
     drone_speed: float
-    distance_matrix: np.ndarray
+    distance_matrix: List[List[float]]
 
     launch_time: float
     land_time: float
@@ -99,9 +99,6 @@ class VRPBTWProblem:
                 )
             )
         self.distance_matrix = calculate_euclidean_distance_matrix(self.nodes)
-        self.truck_cost = 1.0
-        self.drone_cost = 0.2
-
-    @staticmethod
-    def fitness(solution) -> float:
-        return float("inf")
+        self.truck_cost = 25
+        self.drone_cost = 1
+        self.basis_cost = 500
