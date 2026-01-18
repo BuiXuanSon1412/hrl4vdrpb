@@ -1,35 +1,36 @@
-import numpy as np
-from solver import split, unset, balance
-from problem import VRPBTWProblem
-
-
-def test_split():
-    data_path = "../data/generated/data/N400/S042_N400_C_R50.json"
-    problem = VRPBTWProblem(data_path=data_path)
-    num_fleet = problem.num_fleet
-    num_nodes = len(problem.nodes) - 1
-
-    chro = []
-    nodes = np.random.permutation(np.arange(1, num_nodes + num_fleet))
-    masks = np.random.choice([0, 1], size=(num_nodes + num_fleet - 1), p=[0.8, 0.2])
-    chro = np.array([nodes, masks])
-
-    print("initial:")
-    print(chro)
-
-    print("unset:")
-    unset(chro, problem)
-    print(chro)
-
-    print("balance:")
-    chro = balance(chro, problem)
-    print(chro)
-
-    print("split:")
-    seqs = split(chro, problem)
-    for seq in seqs:
-        print(seq)
+from math import cos
+from utils import (
+    cal_cost,
+    cal_tardiness,
+    decode,
+    init_population,
+    repair,
+)
+from problem import Problem
 
 
 if __name__ == "__main__":
-    test_split()
+    data_path = "../data/generated/data/N10/S042_N10_C_R50.json"
+    problem = Problem(data_path=data_path)
+
+    init_popu = init_population(5, 41, problem)
+
+    for idx, indi in enumerate(init_popu):
+        print("INDIVIDUAL ", idx)
+        print("\n===REPAIRED===\n")
+        repair(indi.chromosome, problem)
+        tardiness_solution, cost_solution = decode(indi, problem)
+        print("\n===DECODED===\n")
+        print(f"Tardiness Solution: {cal_tardiness(tardiness_solution, problem):.2f}")
+        for idx, (route, trips) in enumerate(tardiness_solution.routes):
+            print("Fleet ", idx)
+            print(route)
+            print(trips)
+
+        print(f"Cost Solution: {cal_cost(cost_solution, problem):.2f}")
+        for idx, (route, trips) in enumerate(cost_solution.routes):
+            print("Fleet ", idx)
+            print(route)
+            print(trips)
+
+        print("\n\n")

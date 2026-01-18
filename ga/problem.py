@@ -1,40 +1,15 @@
-from typing import List, Optional, Tuple
+from typing import List, Tuple
 from dataclasses import dataclass
 import json
 import numpy as np
 
 
-def calculate_euclidean_distance_matrix(nodes):
-    num_nodes = len(nodes)
-    distance_matrix = np.zeros((num_nodes, num_nodes))
-    for start in nodes:
-        for end in nodes:
-            start_coord = np.array(start.coord)
-            end_coord = np.array(end.coord)
-            distance_matrix[start.id][end.id] = np.linalg.norm(start_coord - end_coord)
-
-    return distance_matrix.tolist()
-
-
-def calculate_manhattan_distance_matrix(nodes):
-    num_nodes = len(nodes)
-    distance_matrix = np.zeros((num_nodes, num_nodes))
-    for start in nodes:
-        for end in nodes:
-            start_coord = np.array(start.coord)
-            end_coord = np.array(end.coord)
-            distance_matrix[start.id][end.id] = np.linalg.norm(
-                start_coord - end_coord, ord=1
-            )
-    return distance_matrix
-
-
 @dataclass
 class Route:
-    nodes: List[Optional[int]]
-    arrival: List[Optional[float]]
-    departure: List[Optional[float]]
-    service: List[Optional[float]]
+    nodes: List[int]
+    arrival: List[float]
+    departure: List[float]
+    service: List[float]
 
 
 @dataclass
@@ -42,7 +17,23 @@ class Node:
     id: int
     coord: Tuple[float, float]
     demand: int
-    time_window: List[Tuple[float, float]]
+    time_window: Tuple[float, float]
+
+
+def calculate_euclidean_distance_matrix(nodes: List[Node]) -> List[List[float]]:
+    coords = np.array([node.coord for node in nodes])
+    diff = coords[:, np.newaxis, :] - coords[np.newaxis, :, :]
+    distance_matrix = np.sqrt(np.sum(diff**2, axis=-1))
+
+    return distance_matrix.tolist()
+
+
+def calculate_manhattan_distance_matrix(nodes: List[Node]) -> List[List[float]]:
+    coords = np.array([node.coord for node in nodes])
+    diff = coords[:, np.newaxis, :] - coords[np.newaxis, :, :]
+    distance_matrix = np.sum(np.abs(diff), axis=-1)
+
+    return distance_matrix.tolist()
 
 
 class Solution:
@@ -50,7 +41,7 @@ class Solution:
         self.routes = routes
 
 
-class VRPBTWProblem:
+class Problem:
     nodes: List[Node]
     num_fleet: int
 
@@ -67,6 +58,9 @@ class VRPBTWProblem:
     launch_time: float
     land_time: float
     service_time: float
+
+    truck_cost: float
+    drone_cost: float
 
     def __init__(self, data_path):
         self.load_from_generated(data_path)
@@ -105,7 +99,6 @@ class VRPBTWProblem:
                 )
             )
         self.distance_matrix = calculate_euclidean_distance_matrix(self.nodes)
-
-    @staticmethod
-    def fitness(solution) -> float:
-        return float("inf")
+        self.truck_cost = 25
+        self.drone_cost = 1
+        self.basis_cost = 500
