@@ -221,7 +221,7 @@ def main():
 
             for data_file in files:
                 print(f"Processing: {data_file.name}")
-                if data_file.name == "S042_N100_R_R50.json":
+                if data_file.name == "S042_N200_R_R50.json":
                     try:
                         # Load problem
                         problem = Problem(str(data_file))
