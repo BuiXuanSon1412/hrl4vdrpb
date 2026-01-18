@@ -143,8 +143,9 @@ def run(filename):
     num_drone_routes = num_drones
     R = list(range(1, num_drone_routes + 1))
 
-    c = 1.0
-    c_tilde = 0.2
+    c = 25.0
+    c_tilde = 1.0
+    c_b = 500.0
 
     M = 10000.0
     M_Q = Q + 1
