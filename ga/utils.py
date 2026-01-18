@@ -1,3 +1,5 @@
+from copy import deepcopy
+import enum
 import random
 from typing import List, Optional, Tuple
 import numpy as np
@@ -66,6 +68,10 @@ def unset(chro, problem: Problem):
             chro[1][i] = 0
 
 
+def truckset(chro, seq, problem: Problem):
+    pass
+
+
 def overload(chro, problem: Problem):
     demands = [node.demand for node in problem.nodes]
     load = 0
@@ -110,17 +116,17 @@ def dronable(chro, problem: Problem):
                 )
 
                 # verify drone load
-                overload = False
+                overloaded = False
                 load = sum(
                     [demands[node[0]] for node in temp_trip if demands[node[0]] > 0]
                 )
                 if load > problem.drone_capacity:
-                    overload = True
+                    overloaded = True
                 else:
                     for node in temp_trip:
                         load -= demands[node[0]]
                         if load > problem.drone_capacity:
-                            overload = True
+                            overloaded = True
                             break
 
                 # violate traveling range and payload
@@ -190,6 +196,7 @@ def schedule(
     )
 
     d_trips = []
+
     for trip in trips:
         d_trips.append(
             Route(
@@ -303,7 +310,7 @@ def schedule(
 
     # Check Drone Customers
     for d_trip in d_trips:
-        for i in range(1, len(d_trip) - 1):
+        for i in range(1, len(d_trip.nodes) - 1):
             tw_end = problem.nodes[d_trip.nodes[i]].time_window[1]
             tardiness = max(0.0, d_trip.service[i] + problem.service_time - tw_end)
             max_tardiness = max(max_tardiness, tardiness)
@@ -319,15 +326,6 @@ def routing(seq, problem: Problem):
     end_depot = len(problem.nodes)
     nodes = [(0, 0)] + seq + [(end_depot, 0)]
 
-    # leftmost-right drone node
-    lr_drone = [0 for _ in range(len(nodes))]
-    temp = 0
-    for idx, node in enumerate(reversed(nodes)):
-        if node[1]:
-            temp = idx
-        else:
-            lr_drone[idx] = temp
-
     # separate truck route and drone trips in one sequence
     route = []
     trips = []
@@ -337,14 +335,14 @@ def routing(seq, problem: Problem):
             route.append(node[0])
         elif node[0] < len(problem.nodes):
             if trip and nodes[trip[-1]][1] != node[1]:
-                trips.append(trip)
+                trips.append(deepcopy(trip))
                 trip.clear()
             trip.append(idx)
     if trip:
         trips.append(trip)
 
     if trips:
-        stack = []
+        queue = deque()
         opt_tardiness = float("inf")
         opt_cost = float("inf")
         opt_tardiness_route = None
@@ -357,21 +355,42 @@ def routing(seq, problem: Problem):
         first = trips[0][0]
         last = trips[0][-1]
         for launch in range(0, first):
-            for land in range(last + 1, lr_drone[last + 1]):
-                temp_trip = [launch] + trip + [land]
+            for land in range(last + 1, len(nodes)):
+                if nodes[land][1]:
+                    break
+                temp_trip = [launch] + trips[0] + [land]
 
                 d = cal_route_distance([nodes[idx][0] for idx in trip], problem)
                 if d <= problem.drone_speed * problem.drone_trip_duration:
-                    stack.append([[temp_trip]])
-
-        while stack:
-            ll_trips = stack.pop()
-
+                    queue.append([temp_trip])
+        while queue:
+            ll_trips = queue.popleft()
             if len(ll_trips) == len(trips):
+                # print("route:")
+                # print(route)
+                # print("trips: ")
+                # print(ll_trips)
                 temp_route, temp_trips, temp_tardiness, temp_cost = schedule(
-                    route, [nodes[idx] for trip in ll_trips for idx in trip], problem
+                    route,
+                    [[nodes[idx][0] for idx in trip] for trip in ll_trips],
+                    problem,
                 )
-                if opt_tardiness > temp_tardiness:
+                # print("SCHEDULED: ")
+                # print("route: ")
+                # print(temp_route)
+                # print("trips: ")
+                # print(temp_trips)
+
+                drained = False
+                if temp_trips:
+                    for trip in temp_trips:
+                        launch = trip.departure[0]
+                        land = trip.arrival[-1] + problem.land_time
+                        if launch - land > problem.drone_trip_duration:
+                            drained = True
+                            break
+
+                if opt_tardiness > temp_tardiness and not drained:
                     opt_tardiness_route, opt_tardiness_trips, opt_tardiness = (
                         temp_route,
                         temp_trips,
@@ -387,9 +406,10 @@ def routing(seq, problem: Problem):
 
             last_trip = ll_trips[-1]
             last_land = last_trip[-1]
+
             next_trip = trips[len(ll_trips)]
             for launch in range(last_land, next_trip[0]):
-                for land in range(next_trip[-1], len(nodes)):
+                for land in range(next_trip[-1] + 1, len(nodes)):
                     if nodes[land][1]:
                         break
                     temp_trip = [launch] + next_trip + [land]
@@ -397,8 +417,8 @@ def routing(seq, problem: Problem):
                         [nodes[idx][0] for idx in temp_trip], problem
                     )
                     if d <= problem.drone_speed * problem.drone_trip_duration:
-                        ll_trips.append(temp_trip)
-                        stack.append(ll_trips)
+                        temp_ll_trips = ll_trips + [temp_trip]
+                        queue.append(temp_ll_trips)
     else:
         temp_route, temp_trips, temp_tardiness, temp_cost = schedule(route, [], problem)
         opt_tardiness_route, opt_tardiness_trips, opt_tardiness = (
@@ -418,18 +438,50 @@ def routing(seq, problem: Problem):
 def decode(indi: Individual, problem: Problem) -> Tuple[Solution, Solution]:
     chro = indi.chromosome
 
-    print("CHROMOSOME: ")
-    print(chro)
+    # print("CHROMOSOME: ")
+    # print(chro)
     seqs = partition(chro, problem)
-    print("PARTITIONED: ")
-    print(seqs)
+    # print("PARTITIONED: ")
+    # print(seqs)
     tardiness_routes = []
     cost_routes = []
 
-    for seq in seqs:
+    seq_indices = []
+    for idx, seq in enumerate(seqs):
         tardiness_route, tardiness_trips, cost_route, cost_trips = routing(seq, problem)
+
+        if not tardiness_route:
+            for i in range(len(seq)):
+                seq[i] = (seq[i][0], 0)
+
+            seq_indices.append(idx)
+            tardiness_route, tardiness_trips, cost_route, cost_trips = routing(
+                seq, problem
+            )
+
         tardiness_routes.append((tardiness_route, tardiness_trips))
         cost_routes.append((cost_route, cost_trips))
+
+    if seq_indices:
+        chro = indi.chromosome
+        seq_idx = 0
+
+        n_node = len(problem.nodes)
+        start = 0
+        for i in range(len(chro[0])):
+            if chro[0][i] >= n_node:
+                if i > start:
+                    if seq_idx in seq_indices:
+                        for j in range(start, i):
+                            chro[1][j] = 0
+                    seq_idx = seq_idx + 1
+                start = i + 1
+            elif i == len(chro[0]) - 1:
+                if start < len(chro[0]):
+                    if seq_idx in seq_indices:
+                        for j in range(start, len(chro[0])):
+                            chro[1][j] = 0
+                    seq_idx = seq_idx + 1
 
     return Solution(tardiness_routes), Solution(cost_routes)
 
@@ -491,6 +543,6 @@ def cal_fitness(problem: Problem, indi: Individual):
     tardiness_solution, cost_solution = decode(indi, problem)
 
     tardiness = cal_tardiness(tardiness_solution, problem)
-    cost = cal_tardiness(cost_solution, problem)
+    cost = cal_cost(cost_solution, problem)
 
     return chro, tardiness, cost
