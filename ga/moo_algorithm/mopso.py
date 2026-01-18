@@ -3,10 +3,12 @@ import sys
 import os
 import numpy as np
 from copy import deepcopy
+
 # Add the parent directory to the module search path
 sys.path.append(os.path.dirname(os.path.abspath(__file__)) + "/..")
 from moo_algorithm.metric import cal_hv_front
 from population import Population, Individual
+
 
 class MOPSOPopulation(Population):
     def __init__(self, pop_size):
@@ -64,7 +66,9 @@ class MOPSOPopulation(Population):
         for i, individual in enumerate(self.indivs):
             r1 = np.random.rand(len(individual.chromosome))
             r2 = np.random.rand(len(individual.chromosome))
-            cognitive = c1 * r1 * (self.personal_best[i].chromosome - individual.chromosome)
+            cognitive = (
+                c1 * r1 * (self.personal_best[i].chromosome - individual.chromosome)
+            )
             social = c2 * r2 * (self.global_best.chromosome - individual.chromosome)
             self.velocity[i] = w * self.velocity[i] + cognitive + social
             individual.chromosome += self.velocity[i]
@@ -106,19 +110,23 @@ class MOPSOPopulation(Population):
 
             for m in range(len(front[0].objectives)):
                 front.sort(key=lambda individual: individual.objectives[m])
-                front[0].crowding_distance = 10 ** 9
-                front[solutions_num - 1].crowding_distance = 10 ** 9
+                front[0].crowding_distance = 10**9
+                front[solutions_num - 1].crowding_distance = 10**9
                 m_values = [individual.objectives[m] for individual in front]
                 scale = max(m_values) - min(m_values)
-                if scale == 0: scale = 1
+                if scale == 0:
+                    scale = 1
                 for i in range(1, solutions_num - 1):
-                    front[i].crowding_distance += (front[i + 1].objectives[m] - front[i - 1].objectives[m]) / scale
+                    front[i].crowding_distance += (
+                        front[i + 1].objectives[m] - front[i - 1].objectives[m]
+                    ) / scale
 
     # Crowding Operator
     def crowding_operator(self, individual, other_individual):
-        if (individual.rank < other_individual.rank) or \
-                ((individual.rank == other_individual.rank) and (
-                        individual.crowding_distance > other_individual.crowding_distance)):
+        if (individual.rank < other_individual.rank) or (
+            (individual.rank == other_individual.rank)
+            and (individual.crowding_distance > other_individual.crowding_distance)
+        ):
             return 1
         else:
             return -1
@@ -135,14 +143,19 @@ class MOPSOPopulation(Population):
                 break
             front_num += 1
         self.calculate_crowding_distance(self.ParetoFront[front_num])
-        self.ParetoFront[front_num].sort(key=lambda individual: individual.crowding_distance, reverse=True)
+        self.ParetoFront[front_num].sort(
+            key=lambda individual: individual.crowding_distance, reverse=True
+        )
         number_remain = self.pop_size - len(new_indivs)
         new_indivs.extend(self.ParetoFront[front_num][0:number_remain])
         new_fronts.append(self.ParetoFront[front_num][0:number_remain])
         self.ParetoFront = new_fronts
         self.indivs = new_indivs
 
-def run_mopso(processing_number, problem, indi_list, pop_size, max_gen, w, c1, c2, cal_fitness):
+
+def run_mopso(
+    processing_number, problem, indi_list, pop_size, max_gen, w, c1, c2, cal_fitness
+):
     print("MOPSO")
     history = {}
     mopso_pop = MOPSOPopulation(pop_size)
@@ -178,5 +191,8 @@ def run_mopso(processing_number, problem, indi_list, pop_size, max_gen, w, c1, c
         history[gen + 1] = Pareto_store
 
     pool.close()
-    print("MOPSO Done: ", cal_hv_front(mopso_pop.ParetoFront[0], np.array([1, 1, 10, 10])))
+    # print("MOPSO Done: ", cal_hv_front(mopso_pop.ParetoFront[0], np.array([1, 1, 10, 10])))
+    print(
+        "MOPSO Done: ", cal_hv_front(mopso_pop.ParetoFront[0], np.array([10, 100000]))
+    )
     return history

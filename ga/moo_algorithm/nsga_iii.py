@@ -11,8 +11,8 @@
 #             res = []
 #             for i in range(left):
 #                 w
-# 
-# 
+#
+#
 # ork_point[depth] = i / total
 #                 res = res + gen_refs_recursive(
 #                     work_point, num_objs, left - i, total, depth + 1
@@ -102,7 +102,7 @@
 #     """Associates individuals to reference points and calculates niche number.
 #     Corresponds to Algorithm 3 of Deb & Jain (2014)."""
 #     # tools.sortLogNondominated(individuals, len(individuals))
-    
+
 #     num_objs = len(individuals[0].objectives)
 
 #     for ind in individuals:
@@ -111,10 +111,10 @@
 #             for rp in reference_points
 #         ]
 #         best_rp, best_dist = sorted(rp_dists, key=lambda rpd: rpd[1])[0]
-        
+
 #         ind.reference_point = best_rp
 #         ind.ref_point_distance = best_dist
-        
+
 #         best_rp.associations_count += 1
 #         best_rp.associations.append(ind)
 
@@ -128,7 +128,7 @@
 
 #     ideal_point = find_ideal_point(individuals)
 #     extremes = find_extreme_points(individuals)
-    
+
 #     intercepts = construct_hyperplane(individuals, extremes)
 #     normalize_objectives(individuals, intercepts, ideal_point)
 
@@ -138,13 +138,13 @@
 #     res = []
 #     while len(res) < k:
 #         min_assoc_rp = min(reference_points, key=lambda rp: rp.associations_count)
-        
+
 #         min_assoc_rps = [
 #             rp
 #             for rp in reference_points
 #             if rp.associations_count == min_assoc_rp.associations_count
 #         ]
-        
+
 #         chosen_rp = min_assoc_rps[random.randint(0, len(min_assoc_rps) - 1)]
 
 #         if chosen_rp.associations:
@@ -155,9 +155,9 @@
 #             else:
 #                 sel = chosen_rp.associations[random.randint(0, len(chosen_rp.associations) - 1)]
 #             res += [sel]
-#             chosen_rp.associations.remove(sel) 
-#             chosen_rp.associations_count += 1 
-#             individuals.remove(sel) 
+#             chosen_rp.associations.remove(sel)
+#             chosen_rp.associations_count += 1
+#             individuals.remove(sel)
 #         else:
 #             reference_points.remove(chosen_rp)
 
@@ -230,10 +230,9 @@
 
 #     def natural_selection(self):
 #         self.indivs = sel_nsga_iii(self.indivs, self.pop_size)
-        
 
 
-# def run_nsga_iii(processing_number, problem, indi_list, pop_size, max_gen, crossover_operator, mutation_operator, 
+# def run_nsga_iii(processing_number, problem, indi_list, pop_size, max_gen, crossover_operator, mutation_operator,
 #                 crossover_rate, mutation_rate, cal_fitness):
 #     print("NSGA-III")
 #     nsga_iii_pop = NSGAIIIPopulation(pop_size)
@@ -276,7 +275,7 @@
 #         for indi in nsga_iii_pop.ParetoFront[0]:
 #             Pareto_store.append(list(indi.objectives))
 #         history[gen+1] = Pareto_store
-        
+
 #     pool.close()
 
 #     print("NSGA-III Done: ", cal_hv_front(nsga_iii_pop.ParetoFront[0], np.array([1,1,10,10])))
@@ -285,6 +284,7 @@
 import multiprocessing
 import os
 import sys
+
 sys.path.append(os.path.dirname(os.path.abspath(__file__)) + "/..")
 from moo_algorithm.metric import cal_hv_front
 from population import Population, Individual
@@ -326,7 +326,7 @@ def generate_reference_points(num_objs, num_divisions_per_obj=4):
 
 def find_ideal_point(indivs):
     m = len(indivs[0].objectives)
-    ideal_point = [np.inf]*m
+    ideal_point = [np.inf] * m
     for indi in indivs:
         for i in range(m):
             ideal_point[i] = min(ideal_point[i], indi.objectives[i])
@@ -393,14 +393,13 @@ def associate(individuals, reference_points):
 
     for ind in individuals:
         rp_dists = [
-            (rp, perpendicular_distance(ind.objectives, rp))
-            for rp in reference_points
+            (rp, perpendicular_distance(ind.objectives, rp)) for rp in reference_points
         ]
         best_rp, best_dist = sorted(rp_dists, key=lambda rpd: rpd[1])[0]
-        
+
         ind.reference_point = best_rp
         ind.ref_point_distance = best_dist
-        
+
         best_rp.associations_count += 1
         best_rp.associations.append(ind)
 
@@ -411,7 +410,7 @@ def niching_select(individuals, k):
 
     ideal_point = find_ideal_point(individuals)
     extremes = find_extreme_points(individuals)
-    
+
     intercepts = construct_hyperplane(individuals, extremes)
     normalize_objectives(individuals, intercepts, ideal_point)
 
@@ -421,13 +420,13 @@ def niching_select(individuals, k):
     res = []
     while len(res) < k:
         min_assoc_rp = min(reference_points, key=lambda rp: rp.associations_count)
-        
+
         min_assoc_rps = [
             rp
             for rp in reference_points
             if rp.associations_count == min_assoc_rp.associations_count
         ]
-        
+
         chosen_rp = min_assoc_rps[random.randint(0, len(min_assoc_rps) - 1)]
 
         if chosen_rp.associations:
@@ -436,11 +435,13 @@ def niching_select(individuals, k):
                     chosen_rp.associations, key=lambda ind: ind.ref_point_distance
                 )
             else:
-                sel = chosen_rp.associations[random.randint(0, len(chosen_rp.associations) - 1)]
+                sel = chosen_rp.associations[
+                    random.randint(0, len(chosen_rp.associations) - 1)
+                ]
             res += [sel]
-            chosen_rp.associations.remove(sel) 
-            chosen_rp.associations_count += 1 
-            individuals.remove(sel) 
+            chosen_rp.associations.remove(sel)
+            chosen_rp.associations_count += 1
+            individuals.remove(sel)
         else:
             reference_points.remove(chosen_rp)
 
@@ -501,6 +502,7 @@ class NSGAIIIPopulation(Population):
     def __init__(self, pop_size):
         super().__init__(pop_size)
         self.ParetoFront = []
+
     def fast_nondominated_sort(self):
         self.ParetoFront = fast_nondominated_sort(self.indivs)
 
@@ -508,8 +510,18 @@ class NSGAIIIPopulation(Population):
         self.indivs = sel_nsga_iii(self.indivs, self.pop_size)
 
 
-def run_nsga_iii(processing_number, problem, indi_list, pop_size, max_gen, crossover_operator, mutation_operator, 
-                crossover_rate, mutation_rate, cal_fitness):
+def run_nsga_iii(
+    processing_number,
+    problem,
+    indi_list,
+    pop_size,
+    max_gen,
+    crossover_operator,
+    mutation_operator,
+    crossover_rate,
+    mutation_rate,
+    cal_fitness,
+):
     print("NSGA-III")
     nsga_iii_pop = NSGAIIIPopulation(pop_size)
     nsga_iii_pop.pre_indi_gen(indi_list)
@@ -517,7 +529,7 @@ def run_nsga_iii(processing_number, problem, indi_list, pop_size, max_gen, cross
     history = {}
     pool = multiprocessing.Pool(processing_number)
     arg = []
-    
+
     for individual in nsga_iii_pop.indivs:
         arg.append((problem, individual))
     result = pool.starmap(cal_fitness, arg, chunksize=10)
@@ -525,7 +537,6 @@ def run_nsga_iii(processing_number, problem, indi_list, pop_size, max_gen, cross
     for individual, fitness in zip(nsga_iii_pop.indivs, result):
         individual.chromosome = fitness[0]
         individual.objectives = fitness[1:]
-
 
     # for individual in nsga_iii_pop.indivs:
     #     fitness = cal_fitness(problem, individual)
@@ -544,13 +555,18 @@ def run_nsga_iii(processing_number, problem, indi_list, pop_size, max_gen, cross
 
     for gen in range(max_gen):
         print("Bắt đầu tạo offspring")
-        offspring = nsga_iii_pop.gen_offspring(problem, crossover_operator, mutation_operator, crossover_rate, mutation_rate)
+        offspring = nsga_iii_pop.gen_offspring(
+            problem,
+            crossover_operator,
+            mutation_operator,
+            crossover_rate,
+            mutation_rate,
+        )
         print("Bắt đầu tính fitness: ", len(offspring))
         pool = multiprocessing.Pool(processing_number)
         arg = []
         for individual in offspring:
             arg.append((problem, individual))
-        
 
         result = pool.starmap(cal_fitness, arg, chunksize=10)
         for individual, fitness in zip(offspring, result):
@@ -563,16 +579,20 @@ def run_nsga_iii(processing_number, problem, indi_list, pop_size, max_gen, cross
         #     fitness = cal_fitness(problem, individual)
         #     individual.chromosome = fitness[0]
         #     individual.objectives = fitness[1:]
-        
+
         nsga_iii_pop.indivs.extend(offspring)
         nsga_iii_pop.natural_selection()
         nsga_iii_pop.fast_nondominated_sort()
-        print(f"Generation {gen+1}: Done")
+        print(f"Generation {gen + 1}: Done")
         # print(len(nsga_iii_pop.ParetoFront[0]))
         Pareto_store = []
         for indi in nsga_iii_pop.ParetoFront[0]:
             Pareto_store.append(list(indi.objectives))
-        history[gen+1] = Pareto_store    
+        history[gen + 1] = Pareto_store
     # pool.close()
-    print("NSGA-III Done: ", cal_hv_front(nsga_iii_pop.ParetoFront[0], np.array([100000,10000,100000])))
+    # print("NSGA-III Done: ", cal_hv_front(nsga_iii_pop.ParetoFront[0], np.array([100000,10000,100000])))
+    print(
+        "NSGA-III Done: ",
+        cal_hv_front(nsga_iii_pop.ParetoFront[0], np.array([10, 100000])),
+    )
     return history

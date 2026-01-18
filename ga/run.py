@@ -27,6 +27,7 @@ ALGORITHMS = {
             "F": 0.5,
             "CR": 0.9,
         },
+        "ref_point": [10, 100000],
     },
     "MOEAD": {
         "runner": run_moead,
@@ -36,6 +37,7 @@ ALGORITHMS = {
             "crossover_operator": crossover_PMX,
             "mutation_operator": mutation_flip,
         },
+        "ref_point": [10, 100000],
     },
     "MOPSO": {
         "runner": run_mopso,
@@ -44,6 +46,7 @@ ALGORITHMS = {
             "c1": 1.5,
             "c2": 1.5,
         },
+        "ref_point": [10, 100000],
     },
     "NSGA_II": {
         "runner": run_nsga_ii,
@@ -53,6 +56,7 @@ ALGORITHMS = {
             "crossover_rate": 0.9,
             "mutation_rate": 0.1,
         },
+        "ref_point": [10, 100000],
     },
     "NSGA_III": {
         "runner": run_nsga_iii,
@@ -62,6 +66,7 @@ ALGORITHMS = {
             "crossover_rate": 0.9,
             "mutation_rate": 0.1,
         },
+        "ref_point": [10, 100000],
     },
     "PFG_MOEA": {
         "runner": run_pfgmoea,
@@ -73,6 +78,7 @@ ALGORITHMS = {
             "crossover_rate": 0.9,
             "mutation_rate": 0.1,
         },
+        "ref_point": [10, 100000],
     },
 }
 

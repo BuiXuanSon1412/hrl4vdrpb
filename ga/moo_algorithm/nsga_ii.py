@@ -2,16 +2,17 @@ import multiprocessing
 import sys
 import os
 import numpy as np
+
 # Add the parent directory to the module search path
 sys.path.append(os.path.dirname(os.path.abspath(__file__)) + "/..")
 from moo_algorithm.metric import cal_hv_front
 from population import Population, Individual
 
+
 class NSGAIIPopulation(Population):
     def __init__(self, pop_size):
         super().__init__(pop_size)
         self.ParetoFront = []
-    
 
     def fast_nondominated_sort_crowding_distance(self, indi_list):
         ParetoFront = [[]]
@@ -49,19 +50,23 @@ class NSGAIIPopulation(Population):
 
             for m in range(len(front[0].objectives)):
                 front.sort(key=lambda individual: individual.objectives[m])
-                front[0].crowding_distance = 10 ** 9
-                front[solutions_num - 1].crowding_distance = 10 ** 9
+                front[0].crowding_distance = 10**9
+                front[solutions_num - 1].crowding_distance = 10**9
                 m_values = [individual.objectives[m] for individual in front]
                 scale = max(m_values) - min(m_values)
-                if scale == 0: scale = 1
+                if scale == 0:
+                    scale = 1
                 for i in range(1, solutions_num - 1):
-                    front[i].crowding_distance += (front[i + 1].objectives[m] - front[i - 1].objectives[m]) / scale
+                    front[i].crowding_distance += (
+                        front[i + 1].objectives[m] - front[i - 1].objectives[m]
+                    ) / scale
 
     # Crowding Operator
     def crowding_operator(self, individual, other_individual):
-        if (individual.rank < other_individual.rank) or \
-                ((individual.rank == other_individual.rank) and (
-                        individual.crowding_distance > other_individual.crowding_distance)):
+        if (individual.rank < other_individual.rank) or (
+            (individual.rank == other_individual.rank)
+            and (individual.crowding_distance > other_individual.crowding_distance)
+        ):
             return 1
         else:
             return -1
@@ -78,7 +83,9 @@ class NSGAIIPopulation(Population):
                 break
             front_num += 1
         self.calculate_crowding_distance(self.ParetoFront[front_num])
-        self.ParetoFront[front_num].sort(key=lambda individual: individual.crowding_distance, reverse=True)
+        self.ParetoFront[front_num].sort(
+            key=lambda individual: individual.crowding_distance, reverse=True
+        )
         number_remain = self.pop_size - len(new_indivs)
         new_indivs.extend(self.ParetoFront[front_num][0:number_remain])
         new_fronts.append(self.ParetoFront[front_num][0:number_remain])
@@ -86,8 +93,18 @@ class NSGAIIPopulation(Population):
         self.indivs = new_indivs
 
 
-def run_nsga_ii(processing_number, problem, indi_list, pop_size, max_gen, crossover_operator, mutation_operator, 
-                crossover_rate, mutation_rate, cal_fitness):
+def run_nsga_ii(
+    processing_number,
+    problem,
+    indi_list,
+    pop_size,
+    max_gen,
+    crossover_operator,
+    mutation_operator,
+    crossover_rate,
+    mutation_rate,
+    cal_fitness,
+):
     history = {}
     nsga_ii_pop = NSGAIIPopulation(pop_size)
     nsga_ii_pop.pre_indi_gen(indi_list)
@@ -108,10 +125,15 @@ def run_nsga_ii(processing_number, problem, indi_list, pop_size, max_gen, crosso
     history[0] = Pareto_store
     print("NSGA-II 0 Done: ")
 
-
     for gen in range(max_gen):
         Pareto_store = []
-        offspring = nsga_ii_pop.gen_offspring(problem, crossover_operator, mutation_operator, crossover_rate, mutation_rate)
+        offspring = nsga_ii_pop.gen_offspring(
+            problem,
+            crossover_operator,
+            mutation_operator,
+            crossover_rate,
+            mutation_rate,
+        )
         arg = []
         for individual in offspring:
             arg.append((problem, individual))
@@ -126,7 +148,9 @@ def run_nsga_ii(processing_number, problem, indi_list, pop_size, max_gen, crosso
             Pareto_store.append(list(indi.objectives))
         history[gen + 1] = Pareto_store
     pool.close()
-    print("NSGA-II Done: ", cal_hv_front(nsga_ii_pop.ParetoFront[0], np.array([100000, 10000, 10000])))
+    # print("NSGA-II Done: ", cal_hv_front(nsga_ii_pop.ParetoFront[0], np.array([100000, 10000, 10000])))
+    print(
+        "NSGA-II Done: ",
+        cal_hv_front(nsga_ii_pop.ParetoFront[0], np.array([10, 100000])),
+    )
     return history
-    
-

@@ -468,6 +468,7 @@ def decode(indi: Individual, problem: Problem) -> Tuple[Solution, Solution]:
 
         n_node = len(problem.nodes)
         start = 0
+
         for i in range(len(chro[0])):
             if chro[0][i] >= n_node:
                 if i > start:

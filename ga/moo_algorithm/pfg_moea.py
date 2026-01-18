@@ -4,9 +4,11 @@ from copy import deepcopy
 import multiprocessing
 import sys
 import os
+
 sys.path.append(os.path.dirname(os.path.abspath(__file__)) + "/..")
 from moo_algorithm.metric import cal_hv_front
 from population import Population
+
 
 def cal_knee_point(pop):
     knee_point = np.zeros(len(pop.indivs[0].objectives))
@@ -18,6 +20,7 @@ def cal_knee_point(pop):
             knee_point[i] = min(knee_point[i], indi.objectives[i])
     return knee_point
 
+
 def cal_nadir_point(pop):
     m = len(pop.indivs[0].objectives)
     nadir_point = np.zeros(m)
@@ -27,12 +30,13 @@ def cal_nadir_point(pop):
         for i in range(m):
             nadir_point[i] = max(nadir_point[i], indi.objectives[i])
 
-    SP = random.sample(pop.indivs, int(len(pop.indivs)/3))
+    SP = random.sample(pop.indivs, int(len(pop.indivs) / 3))
     NDS_SP = NonDominatedSort(SP)
-    for indi in NDS_SP: 
+    for indi in NDS_SP:
         for i in range(m):
             nadir_point[i] = max(nadir_point[i], indi.objectives[i])
     return nadir_point
+
 
 def NonDominatedSort(SP):
     SP_copy = deepcopy(SP)
@@ -44,18 +48,24 @@ def NonDominatedSort(SP):
             if individual.dominates(other_individual):
                 individual.dominated_solutions.append(other_individual)
             elif other_individual.dominates(individual):
-                individual.domination_count +=1
-        if individual.domination_count ==0:
+                individual.domination_count += 1
+        if individual.domination_count == 0:
             individual.rank = 0
             ParetoFront.append(individual)
     return ParetoFront
 
+
 def Generation_PFG(pop, GK, knee_point, nadir_point, sigma):
-    
-    d = [(nadir_point[j] - knee_point[j] + 2*sigma) / GK for j in range(len(knee_point))]
+    d = [
+        (nadir_point[j] - knee_point[j] + 2 * sigma) / GK
+        for j in range(len(knee_point))
+    ]
     Grid = []
     for indi in pop.indivs:
-        grid_indi = [(indi.objectives[j] - knee_point[j] + sigma) // d[j] for j in range(len(knee_point))]
+        grid_indi = [
+            (indi.objectives[j] - knee_point[j] + sigma) // d[j]
+            for j in range(len(knee_point))
+        ]
         Grid.append(grid_indi)
     PFG = [[[] for _ in range(GK)] for _ in range(len(knee_point))]
 
@@ -71,7 +81,6 @@ class PFGMOEAPopulation(Population):
     def __init__(self, pop_size):
         super().__init__(pop_size)
         self.ParetoFront = []
-    
 
     def fast_nondominated_sort_crowding_distance(self, indi_list):
         ParetoFront = [[]]
@@ -109,19 +118,23 @@ class PFGMOEAPopulation(Population):
 
             for m in range(len(front[0].objectives)):
                 front.sort(key=lambda individual: individual.objectives[m])
-                front[0].crowding_distance = 10 ** 9
-                front[solutions_num - 1].crowding_distance = 10 ** 9
+                front[0].crowding_distance = 10**9
+                front[solutions_num - 1].crowding_distance = 10**9
                 m_values = [individual.objectives[m] for individual in front]
                 scale = max(m_values) - min(m_values)
-                if scale == 0: scale = 1
+                if scale == 0:
+                    scale = 1
                 for i in range(1, solutions_num - 1):
-                    front[i].crowding_distance += (front[i + 1].objectives[m] - front[i - 1].objectives[m]) / scale
+                    front[i].crowding_distance += (
+                        front[i + 1].objectives[m] - front[i - 1].objectives[m]
+                    ) / scale
 
     # Crowding Operator
     def crowding_operator(self, individual, other_individual):
-        if (individual.rank < other_individual.rank) or \
-                ((individual.rank == other_individual.rank) and (
-                        individual.crowding_distance > other_individual.crowding_distance)):
+        if (individual.rank < other_individual.rank) or (
+            (individual.rank == other_individual.rank)
+            and (individual.crowding_distance > other_individual.crowding_distance)
+        ):
             return 1
         else:
             return -1
@@ -138,7 +151,9 @@ class PFGMOEAPopulation(Population):
                 break
             front_num += 1
         self.calculate_crowding_distance(self.ParetoFront[front_num])
-        self.ParetoFront[front_num].sort(key=lambda individual: individual.crowding_distance, reverse=True)
+        self.ParetoFront[front_num].sort(
+            key=lambda individual: individual.crowding_distance, reverse=True
+        )
         number_remain = self.pop_size - len(new_indivs)
         new_indivs.extend(self.ParetoFront[front_num][0:number_remain])
         new_fronts.append(self.ParetoFront[front_num][0:number_remain])
@@ -146,8 +161,20 @@ class PFGMOEAPopulation(Population):
         self.indivs = new_indivs
 
 
-def run_pfgmoea(processing_number, problem, indi_list, pop_size, max_gen, GK, sigma, crossover_operator, mutation_operator, 
-            crossover_rate, mutation_rate, cal_fitness):
+def run_pfgmoea(
+    processing_number,
+    problem,
+    indi_list,
+    pop_size,
+    max_gen,
+    GK,
+    sigma,
+    crossover_operator,
+    mutation_operator,
+    crossover_rate,
+    mutation_rate,
+    cal_fitness,
+):
     print("PFG MOEA")
     pop = PFGMOEAPopulation(pop_size)
     pop.pre_indi_gen(indi_list)
@@ -181,7 +208,9 @@ def run_pfgmoea(processing_number, problem, indi_list, pop_size, max_gen, GK, si
             for i in range(GK - 1):
                 if len(PFG[j][i]) > 1:
                     for indi in PFG[j][i]:
-                        if (random.random() < crossover_rate) and (len(PFG[j][i+ 1]) >1):
+                        if (random.random() < crossover_rate) and (
+                            len(PFG[j][i + 1]) > 1
+                        ):
                             other_indi = random.choice(PFG[j][i + 1])
                             off1, off2 = crossover_operator(problem, indi, other_indi)
                             if random.random() < mutation_rate:
@@ -217,17 +246,25 @@ def run_pfgmoea(processing_number, problem, indi_list, pop_size, max_gen, GK, si
     # return result
 
     # print(history)
-    print("PFG -MOEA Done: ", cal_hv_front(pop.ParetoFront[0], np.array([100000, 10000, 100000])))
+    # print("PFG -MOEA Done: ", cal_hv_front(pop.ParetoFront[0], np.array([100000, 10000, 100000])))
+    print("PFG-MOEA Done: ", cal_hv_front(pop.ParetoFront[0], np.array([10, 100000])))
     return history
 
 
-
-
-
-
-
-def run_pfgmoea_mix(processing_number, problem, indi_list, pop_size, max_gen, GK, sigma, crossover_operator_list, mutation_operator, 
-            crossover_rate, mutation_rate, cal_fitness):
+def run_pfgmoea_mix(
+    processing_number,
+    problem,
+    indi_list,
+    pop_size,
+    max_gen,
+    GK,
+    sigma,
+    crossover_operator_list,
+    mutation_operator,
+    crossover_rate,
+    mutation_rate,
+    cal_fitness,
+):
     print("PFG MOEA Mix")
     pop = PFGMOEAPopulation(pop_size)
     pop.pre_indi_gen(indi_list)
@@ -261,11 +298,13 @@ def run_pfgmoea_mix(processing_number, problem, indi_list, pop_size, max_gen, GK
             for i in range(GK - 1):
                 if len(PFG[j][i]) > 1:
                     for indi in PFG[j][i]:
-                        if (random.random() < crossover_rate) and (len(PFG[j][i+ 1]) >1):
+                        if (random.random() < crossover_rate) and (
+                            len(PFG[j][i + 1]) > 1
+                        ):
                             other_indi = random.choice(PFG[j][i + 1])
-                            if random.random() < 1/3:
+                            if random.random() < 1 / 3:
                                 crossover_operator = crossover_operator_list[0]
-                            elif random.random() < 2/3:
+                            elif random.random() < 2 / 3:
                                 crossover_operator = crossover_operator_list[1]
                             else:
                                 crossover_operator = crossover_operator_list[2]
@@ -302,5 +341,12 @@ def run_pfgmoea_mix(processing_number, problem, indi_list, pop_size, max_gen, GK
     # return result
 
     # print(history)
-    print("PFG -MOEA Mix Done: ", cal_hv_front(pop.ParetoFront[0], np.array([100000, 10000, 100000])))
+    # print(
+    #    "PFG -MOEA Mix Done: ",
+    #    cal_hv_front(pop.ParetoFront[0], np.array([100000, 10000, 100000])),
+    # )
+    print(
+        "PFG-MOEA Mix Done: ", cal_hv_front(pop.ParetoFront[0], np.array([10, 100000]))
+    )
     return history
+
