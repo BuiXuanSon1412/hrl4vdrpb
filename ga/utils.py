@@ -133,7 +133,7 @@ def dronable(chro, problem: Problem):
                 # -> switch sign of mask value from current violated gene
                 if (
                     temp_in_distance > problem.drone_speed * problem.drone_trip_duration
-                    or overload
+                    or overloaded
                 ):
                     if chro[1][i - 1] == chro[1][i] and chro[0][i - 1] < n_node:
                         chro[1][i] = 0
