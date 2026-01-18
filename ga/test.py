@@ -1,4 +1,7 @@
+from math import cos
 from utils import (
+    cal_cost,
+    cal_tardiness,
     decode,
     init_population,
     repair,
@@ -18,13 +21,13 @@ if __name__ == "__main__":
         repair(indi.chromosome, problem)
         tardiness_solution, cost_solution = decode(indi, problem)
         print("\n===DECODED===\n")
-        print("Tardiness Solution")
+        print(f"Tardiness Solution: {cal_tardiness(tardiness_solution, problem):.2f}")
         for idx, (route, trips) in enumerate(tardiness_solution.routes):
             print("Fleet ", idx)
             print(route)
             print(trips)
 
-        print("Cost Solution")
+        print(f"Cost Solution: {cal_cost(cost_solution, problem):.2f}")
         for idx, (route, trips) in enumerate(cost_solution.routes):
             print("Fleet ", idx)
             print(route)

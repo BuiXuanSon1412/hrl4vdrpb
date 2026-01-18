@@ -509,15 +509,18 @@ def cal_tardiness(solution: Solution, problem: Problem):
                 for idx in range(1, len(route.nodes) - 1)
             ]
         )
-        drone_tardiness = max(
-            [
-                trip.service[idx]
-                + problem.service_time
-                - problem.nodes[trip.nodes[idx]].time_window[1]
-                for trip in trips
-                for idx in range(1, len(trip.nodes) - 1)
-            ]
-        )
+        if trips:
+            drone_tardiness = max(
+                [
+                    trip.service[idx]
+                    + problem.service_time
+                    - problem.nodes[trip.nodes[idx]].time_window[1]
+                    for trip in trips
+                    for idx in range(1, len(trip.nodes) - 1)
+                ]
+            )
+        else:
+            drone_tardiness = 0.0
         temp_tardiness = max(truck_tardiness, drone_tardiness)
         tardiness = max(tardiness, temp_tardiness)
     return tardiness
@@ -528,13 +531,21 @@ def cal_cost(solution, problem):
     cost = 0.0
 
     for route, trips in routes:
-        cost += cal_route_distance([node for node in route.nodes], problem)
-        cost += sum(
-            [
-                cal_route_distance([node for node in trip.nodes], problem)
-                for trip in trips
-            ]
+        cost += (
+            cal_route_distance([node for node in route.nodes], problem)
+            * problem.truck_cost
         )
+        cost += (
+            sum(
+                [
+                    cal_route_distance([node for node in trip.nodes], problem)
+                    for trip in trips
+                ]
+            )
+            * problem.drone_cost
+        )
+
+    cost += len(routes) * problem.basis_cost
     return cost
 
 
