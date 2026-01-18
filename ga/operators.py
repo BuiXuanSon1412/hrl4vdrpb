@@ -1,8 +1,7 @@
 from copy import deepcopy
 import random
-from ga.problem import Problem
+from problem import Problem
 from population import Individual
-from solver import decode
 
 
 # crossover

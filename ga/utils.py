@@ -501,26 +501,36 @@ def cal_tardiness(solution: Solution, problem: Problem):
     routes = solution.routes
     tardiness = 0.0
     for route, trips in routes:
-        truck_tardiness = max(
-            [
+        # Calculate truck tardiness
+        truck_tardiness_list = [
+            max(
+                0.0,
                 route.service[idx]
                 + problem.service_time
-                - problem.nodes[route.nodes[idx]].time_window[1]
-                for idx in range(1, len(route.nodes) - 1)
-            ]
-        )
+                - problem.nodes[route.nodes[idx]].time_window[1],
+            )
+            for idx in range(1, len(route.nodes) - 1)
+        ]
+
+        # Handle empty list case
+        truck_tardiness = max(truck_tardiness_list) if truck_tardiness_list else 0.0
+
+        # Calculate drone tardiness
         if trips:
-            drone_tardiness = max(
-                [
+            drone_tardiness_list = [
+                max(
+                    0.0,
                     trip.service[idx]
                     + problem.service_time
-                    - problem.nodes[trip.nodes[idx]].time_window[1]
-                    for trip in trips
-                    for idx in range(1, len(trip.nodes) - 1)
-                ]
-            )
+                    - problem.nodes[trip.nodes[idx]].time_window[1],
+                )
+                for trip in trips
+                for idx in range(1, len(trip.nodes) - 1)
+            ]
+            drone_tardiness = max(drone_tardiness_list) if drone_tardiness_list else 0.0
         else:
             drone_tardiness = 0.0
+
         temp_tardiness = max(truck_tardiness, drone_tardiness)
         tardiness = max(tardiness, temp_tardiness)
     return tardiness
