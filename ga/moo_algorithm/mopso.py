@@ -69,10 +69,12 @@ class MOPSOPopulation(Population):
             cognitive = (
                 c1 * r1 * (self.personal_best[i].chromosome - individual.chromosome)
             )
+            """ FIX 
             social = c2 * r2 * (self.global_best.chromosome - individual.chromosome)
             self.velocity[i] = w * self.velocity[i] + cognitive + social
             individual.chromosome += self.velocity[i]
             individual.repair()
+            """
 
     def fast_nondominated_sort_crowding_distance(self, indi_list):
         ParetoFront = [[]]
