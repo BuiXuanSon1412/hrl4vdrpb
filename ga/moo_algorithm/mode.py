@@ -104,10 +104,19 @@ class MODEPopulation(Population):
 import random
 
 
+# def rand_1(indi: Individual, indi1: Individual, indi2: Individual, F, CR):
+#    new_indi = Individual()
+#    new_indi.chromosome = indi.chromosome + F * (indi1.chromosome - indi2.chromosome)
+#    new_indi.repair()
+#    for i in range(len(indi.chromosome)):
+#        if random.random() > CR:
+#            new_indi.chromosome[i] = indi.chromosome[i]
+#    return new_indi
+
+
 def rand_1(indi: Individual, indi1: Individual, indi2: Individual, F, CR):
-    new_indi = Individual()
-    new_indi.chromosome = indi.chromosome + F * (indi1.chromosome - indi2.chromosome)
-    new_indi.repair()
+    new_indi = Individual(indi.chromosome + F * (indi1.chromosome - indi2.chromosome))
+    # new_indi.repair()
     for i in range(len(indi.chromosome)):
         if random.random() > CR:
             new_indi.chromosome[i] = indi.chromosome[i]
