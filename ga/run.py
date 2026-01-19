@@ -18,28 +18,24 @@ from moo_algorithm.pfg_moea import run_pfgmoea
 from moo_algorithm.agea import run_agea
 
 
-def cal_fitness_moead(problem, individual):
-    """Wrapper for MOEAD that doesn't modify chromosome"""
-    tardiness_solution, cost_solution = decode(individual, problem)
-    tardiness = cal_tardiness(tardiness_solution, problem)
-    cost = cal_cost(cost_solution, problem)
-    return individual.chromosome, tardiness, cost
-
-
 # Algorithm configurations
 ALGORITHMS = {
-    # "MODE": {
-    #    "runner": run_mode,
-    #    "params": {
-    #        "F": 0.5,
-    #        "CR": 0.9,
-    #    },
-    #    "ref_point": [10, 100000],
-    # },
     "AGEA": {
         "runner": run_agea,
         "params": {
             "init_div": 10,
+            "crossover_operator": crossover_PMX,
+            "mutation_operator": mutation_flip,
+            "crossover_rate": 0.9,
+            "mutation_rate": 0.1,
+        },
+        "ref_point": [24, 100000],
+    },
+    "PFG_MOEA": {
+        "runner": run_pfgmoea,
+        "params": {
+            "GK": 10,
+            "sigma": 0.1,
             "crossover_operator": crossover_PMX,
             "mutation_operator": mutation_flip,
             "crossover_rate": 0.9,
@@ -57,15 +53,6 @@ ALGORITHMS = {
         },
         "ref_point": [24, 100000],
     },
-    # "MOPSO": {
-    #    "runner": run_mopso,
-    #    "params": {
-    #        "w": 0.5,
-    #        "c1": 1.5,
-    #        "c2": 1.5,
-    #    },
-    #    "ref_point": [10, 100000],
-    # },
     "NSGA_II": {
         "runner": run_nsga_ii,
         "params": {
@@ -79,18 +66,6 @@ ALGORITHMS = {
     "NSGA_III": {
         "runner": run_nsga_iii,
         "params": {
-            "crossover_operator": crossover_PMX,
-            "mutation_operator": mutation_flip,
-            "crossover_rate": 0.9,
-            "mutation_rate": 0.1,
-        },
-        "ref_point": [24, 100000],
-    },
-    "PFG_MOEA": {
-        "runner": run_pfgmoea,
-        "params": {
-            "GK": 10,
-            "sigma": 0.1,
             "crossover_operator": crossover_PMX,
             "mutation_operator": mutation_flip,
             "crossover_rate": 0.9,
@@ -227,7 +202,6 @@ def main():
                     problem = Problem(str(data_file))
 
                     # Initialize population
-                    num_nodes = len(problem.nodes) - 1
                     indi_list = init_population(POP_SIZE, SEED, problem)
 
                     # Run algorithm

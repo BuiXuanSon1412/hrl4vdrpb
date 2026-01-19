@@ -209,6 +209,15 @@ class AGEAPopulation(Population):
 
         # Calculate fitness (Eq. 14)
         max_crowding = max(crowding) if crowding else 1
+
+        # Handle case when all solutions have 0 neighbors
+        if max_crowding == 0:
+            # Random selection when all equally sparse
+            selected_idx = np.random.choice(
+                len(solutions), size=self.pop_size, replace=False
+            )
+            return [solutions[int(i)] for i in cast(Any, selected_idx)]
+
         fitness = []
         for c in crowding:
             f = (self.pop_size - 1) * (c ** (1 / M)) / (max_crowding ** (1 / M)) + 1

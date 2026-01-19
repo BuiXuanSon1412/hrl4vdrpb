@@ -16,89 +16,7 @@ from moo_algorithm.nsga_ii import run_nsga_ii
 from moo_algorithm.nsga_iii import run_nsga_iii
 from moo_algorithm.pfg_moea import run_pfgmoea
 from moo_algorithm.agea import run_agea
-
-
-def cal_fitness_moead(problem, individual):
-    """Wrapper for MOEAD that doesn't modify chromosome"""
-    tardiness_solution, cost_solution = decode(individual, problem)
-    tardiness = cal_tardiness(tardiness_solution, problem)
-    cost = cal_cost(cost_solution, problem)
-    return individual.chromosome, tardiness, cost
-
-
-# Algorithm configurations
-ALGORITHMS = {
-    # "MODE": {
-    #    "runner": run_mode,
-    #    "params": {
-    #        "F": 0.5,
-    #        "CR": 0.9,
-    #    },
-    #    "ref_point": [10, 100000],
-    # },
-    # "AGEA": {
-    #    "runner": run_agea,
-    #    "params": {
-    #        "init_div": 10,
-    #        "crossover_operator": crossover_PMX,
-    #        "mutation_operator": mutation_flip,
-    #        "crossover_rate": 0.9,
-    #        "mutation_rate": 0.1,
-    #    },
-    #    "ref_point": [24, 100000],
-    # },
-    # "MOEAD": {
-    #    "runner": run_moead,
-    #    "params": {
-    #        "neighborhood_size": 20,
-    #        "init_weight_vectors": init_weight_vectors_2d,
-    #        "crossover_operator": crossover_PMX,
-    #        "mutation_operator": mutation_flip,
-    #    },
-    #    "ref_point": [24, 100000],
-    # },
-    # "MOPSO": {
-    #    "runner": run_mopso,
-    #    "params": {
-    #        "w": 0.5,
-    #        "c1": 1.5,
-    #        "c2": 1.5,
-    #    },
-    #    "ref_point": [10, 100000],
-    # },
-    # "NSGA_II": {
-    #    "runner": run_nsga_ii,
-    #    "params": {
-    #        "crossover_operator": crossover_PMX,
-    #        "mutation_operator": mutation_flip,
-    #        "crossover_rate": 0.9,
-    #        "mutation_rate": 0.1,
-    #    },
-    #    "ref_point": [24, 100000],
-    # },
-    # "NSGA_III": {
-    #    "runner": run_nsga_iii,
-    #    "params": {
-    #        "crossover_operator": crossover_PMX,
-    #        "mutation_operator": mutation_flip,
-    #        "crossover_rate": 0.9,
-    #        "mutation_rate": 0.1,
-    #    },
-    #    "ref_point": [24, 100000],
-    # },
-    "PFG_MOEA": {
-        "runner": run_pfgmoea,
-        "params": {
-            "GK": 10,
-            "sigma": 0.1,
-            "crossover_operator": crossover_PMX,
-            "mutation_operator": mutation_flip,
-            "crossover_rate": 0.9,
-            "mutation_rate": 0.1,
-        },
-        "ref_point": [24, 100000],
-    },
-}
+from run import ALGORITHMS
 
 
 def run_algorithm_on_data(
@@ -206,28 +124,27 @@ def main():
         print(f"  {size}: {len(files)} files")
 
     # Run each algorithm on each data file
-    for algorithm_name, algorithm_config in ALGORITHMS.items():
-        print(f"\n{'=' * 80}")
-        print(f"Running {algorithm_name}")
-        print(f"{'=' * 80}\n")
+    for size_dir, files in data_files.items():
+        for algorithm_name, algorithm_config in ALGORITHMS.items():
+            print(f"\n{'=' * 80}")
+            print(f"Running {algorithm_name}")
+            print(f"{'=' * 80}\n")
 
-        algorithm_runner = algorithm_config["runner"]
-        algorithm_params = algorithm_config["params"]
+            algorithm_runner = algorithm_config["runner"]
+            algorithm_params = algorithm_config["params"]
 
-        for size_dir, files in data_files.items():
             print(f"\n{'-' * 80}")
             print(f"{algorithm_name} on {size_dir}")
             print(f"{'-' * 80}\n")
 
             for data_file in files:
                 print(f"Processing: {data_file.name}")
-                if data_file.name == "S042_N200_R_R50.json":
+                if data_file.match("S046_N10_R_*.json"):
                     try:
                         # Load problem
                         problem = Problem(str(data_file))
 
                         # Initialize population
-                        num_nodes = len(problem.nodes) - 1
                         indi_list = init_population(POP_SIZE, SEED, problem)
 
                         # Run algorithm
