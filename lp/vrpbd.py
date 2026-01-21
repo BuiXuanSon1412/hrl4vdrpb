@@ -1,10 +1,10 @@
-import pulp as pl
+from ortools.linear_solver import pywraplp
 import numpy as np
 import json
 import argparse
 import sys
 import os
-
+import time
 
 parser = argparse.ArgumentParser()
 parser.add_argument(
@@ -23,7 +23,7 @@ args = parser.parse_args()
 DATA_ROOT = "../data/generated/data"
 RESULT_ROOT = "./result/"
 
-filename = args.filename  # e.g., "S42_N5_C_U_R50.json"
+filename = args.filename
 subfolder = args.subfolder
 
 files = []
@@ -35,7 +35,6 @@ if filename:
     files.append(filename)
 else:
     subfolder_path = os.path.join(DATA_ROOT, subfolder)
-
     files = [
         file
         for file in os.listdir(subfolder_path)
@@ -48,10 +47,11 @@ def run(filename):
     subfolder = parts[1]
     data_path = os.path.join(DATA_ROOT, subfolder, filename)
 
-    # Prepare output path
-    output_dir = os.path.join(RESULT_ROOT, subfolder)
-    if not os.path.exists(output_dir):
-        os.makedirs(output_dir)
+    n_folder = parts[1]  # "N10"
+
+    output_dir = os.path.join(RESULT_ROOT, "cost", n_folder)
+    os.makedirs(output_dir, exist_ok=True)
+
     output_path = os.path.join(output_dir, filename)
 
     with open(data_path, "r") as f:
@@ -116,7 +116,6 @@ def run(filename):
     L = linehaul_indices
     B = backhaul_indices
     C = L + B
-    # N = [depot_idx] + C
     N = [depot_idx] + C
     N_end = C + [end_depot_idx]
     N_all = [depot_idx] + C + [end_depot_idx]
@@ -146,8 +145,9 @@ def run(filename):
     num_drone_routes = num_drones
     R = list(range(1, num_drone_routes + 1))
 
-    c = 1.0
-    c_tilde = 0.2
+    c = 25.0
+    c_tilde = 1.0
+    c_b = 500.0
 
     M = 10000.0
     M_Q = Q + 1
@@ -156,244 +156,262 @@ def run(filename):
     M_edge = M_node * M_node
     M_T = T_max + 1
 
-    w1 = 0.0
-    w2 = 1.0
+    w1 = 1.0
+    w2 = 0.0
 
-    model = pl.LpProblem("VRPBD", pl.LpMinimize)
+    # Create OR-Tools solver
+    solver = pywraplp.Solver.CreateSolver('SCIP')
+    if not solver:
+        print('Could not create solver SCIP')
+        return
 
-    x = pl.LpVariable.dicts("x", ((k, i) for k in K for i in N_all), cat="Binary")
-    y = pl.LpVariable.dicts(
-        "y",
-        ((k, i, j) for k in K for i in N_all for j in N_all if i != j),
-        cat="Binary",
-    )
-    z = pl.LpVariable.dicts(
-        "z", ((k, i) for k in K for i in N_all), lowBound=0, cat="Integer"
-    )
-    p = pl.LpVariable.dicts(
-        "p", ((k, i) for k in K for i in N_all), lowBound=0, cat="Continuous"
-    )
-    a = pl.LpVariable.dicts(
-        "a", ((k, i) for k in K for i in N_all), lowBound=0, cat="Continuous"
-    )
-    b = pl.LpVariable.dicts(
-        "b", ((k, i) for k in K for i in N_all), lowBound=0, cat="Continuous"
-    )
+    # Decision variables
+    x = {}
+    for k in K:
+        for i in N_all:
+            x[k, i] = solver.BoolVar(f'x_{k}_{i}')
 
-    x_tilde = pl.LpVariable.dicts(
-        "x_tilde", ((k, r, i) for k in K for r in R for i in N_all), cat="Binary"
-    )
-    y_tilde = pl.LpVariable.dicts(
-        "y_tilde",
-        ((k, r, i, j) for k in K for r in R for i in N_all for j in N_all if i != j),
-        cat="Binary",
-    )
-    z_tilde = pl.LpVariable.dicts(
-        "z_tilde",
-        ((k, r, i) for k in K for r in R for i in N_all),
-        lowBound=0,
-        cat="Integer",
-    )
-    lambda_var = pl.LpVariable.dicts(
-        "lambda", ((k, r, i) for k in K for r in R for i in N_all), cat="Binary"
-    )
-    varrho = pl.LpVariable.dicts(
-        "varrho", ((k, r, i) for k in K for r in R for i in N_all), cat="Binary"
-    )
-    p_tilde = pl.LpVariable.dicts(
-        "p_tilde",
-        ((k, r, i) for k in K for r in R for i in N_all),
-        lowBound=0,
-        cat="Continuous",
-    )
-    a_tilde = pl.LpVariable.dicts(
-        "a_tilde", ((k, i) for k in K for i in N_all), lowBound=0, cat="Continuous"
-    )
-    b_tilde = pl.LpVariable.dicts(
-        "b_tilde", ((k, i) for k in K for i in N_all), lowBound=0, cat="Continuous"
-    )
-    h = pl.LpVariable.dicts(
-        "h",
-        ((k, r, i) for k in K for r in R for i in N_all),
-        lowBound=0,
-        cat="Continuous",
-    )
+    y = {}
+    for k in K:
+        for i in N_all:
+            for j in N_all:
+                if i != j:
+                    y[k, i, j] = solver.BoolVar(f'y_{k}_{i}_{j}')
 
-    Z_lambda = pl.LpVariable.dicts(
-        "Z_lambda",
-        ((k, r, i) for k in K for r in R for i in N_all),
-        lowBound=0,
-        cat="Continuous",
-    )
-    Z_varrho = pl.LpVariable.dicts(
-        "Z_varrho",
-        ((k, r, i) for k in K for r in R for i in N_end),
-        lowBound=0,
-        cat="Continuous",
-    )
+    z = {}
+    for k in K:
+        for i in N_all:
+            z[k, i] = solver.IntVar(0, solver.infinity(), f'z_{k}_{i}')
 
-    xi = pl.LpVariable.dicts("xi", (i for i in N_all), lowBound=0, cat="Continuous")
+    p = {}
+    for k in K:
+        for i in N_all:
+            p[k, i] = solver.NumVar(0, solver.infinity(), f'p_{k}_{i}')
 
-    tardiness = pl.LpVariable("tardiness", lowBound=0, cat="Continuous")
+    a = {}
+    for k in K:
+        for i in N_all:
+            a[k, i] = solver.NumVar(0, solver.infinity(), f'a_{k}_{i}')
 
-    cost = pl.lpSum(
-        [y[k, i, j] * c * d[i][j] for k in K for i in N_all for j in N_end if i != j]
-    ) + pl.lpSum(
-        [
-            y_tilde[k, r, i, j] * c_tilde * d_tilde[i][j]
-            for k in K
-            for r in R
-            for i in N_all
-            for j in N_end
-            if i != j
-        ]
-    )
+    b = {}
+    for k in K:
+        for i in N_all:
+            b[k, i] = solver.NumVar(0, solver.infinity(), f'b_{k}_{i}')
 
-    model += w1 * cost + w2 * tardiness
-
-    for i in C:
-        model += tardiness >= xi[i] + s[i] - t_end[i], f"tardiness_{i}"
-
-    # 3
-    for i in C:
-        model += (
-            pl.lpSum([x[k, i] for k in K])
-            + pl.lpSum([x_tilde[k, r, i] for k in K for r in R])
-            == 1
-        )
-
+    x_tilde = {}
     for k in K:
         for r in R:
-            model += pl.lpSum(
-                [y_tilde[k, r, i, j] for i in N for j in N_end if i != j]
-            ) <= M * pl.lpSum([lambda_var[k, r, i] for i in N])
+            for i in N_all:
+                x_tilde[k, r, i] = solver.BoolVar(f'x_tilde_{k}_{r}_{i}')
 
+    y_tilde = {}
     for k in K:
         for r in R:
-            for i in C:
-                model += lambda_var[k, r, i] + varrho[k, r, i] <= 1
-    for k in K:
-        for r in R:
-            for i in N:
-                for j in N_end:
+            for i in N_all:
+                for j in N_all:
                     if i != j:
-                        model += y_tilde[k, r, i, j] <= pl.lpSum(
-                            x_tilde[k, r, h] for h in C
-                        )
+                        y_tilde[k, r, i, j] = solver.BoolVar(f'y_tilde_{k}_{r}_{i}_{j}')
 
-    # 4-5
-    for k in K:
-        model += pl.lpSum([y[k, 0, j] for j in C]) <= 1
-        model += pl.lpSum([y[k, i, end_depot_idx] for i in C]) <= 1
-
-    for k in K:
-        for i in C:
-            model += pl.lpSum([y[k, j, i] for j in N if j != i]) == x[k, i]
-            model += pl.lpSum([y[k, i, j] for j in N_end if j != i]) == x[k, i]
-
-    # 6-7
+    z_tilde = {}
     for k in K:
         for r in R:
-            model += pl.lpSum([lambda_var[k, r, i] for i in N]) <= 1
-            model += pl.lpSum([varrho[k, r, j] for j in N_end]) <= 1
-            model += pl.lpSum([lambda_var[k, r, i] for i in N]) == pl.lpSum(
-                [varrho[k, r, j] for j in N_end]
-            )
+            for i in N_all:
+                z_tilde[k, r, i] = solver.IntVar(0, solver.infinity(), f'z_tilde_{k}_{r}_{i}')
 
-    # 8
+    lambda_var = {}
     for k in K:
         for r in R:
-            for i in C:
-                model += lambda_var[k, r, i] <= x[k, i]
-                model += varrho[k, r, i] <= x[k, i]
+            for i in N_all:
+                lambda_var[k, r, i] = solver.BoolVar(f'lambda_{k}_{r}_{i}')
 
-    # 9-13
+    varrho = {}
     for k in K:
         for r in R:
-            for i in C:
-                model += pl.lpSum([y_tilde[k, r, j, i] for j in N if i != j]) - x_tilde[
-                    k, r, i
-                ] <= M_node * (lambda_var[k, r, i] + varrho[k, r, i])
-                model += pl.lpSum([y_tilde[k, r, j, i] for j in N if i != j]) - x_tilde[
-                    k, r, i
-                ] >= -M_node * (lambda_var[k, r, i] + varrho[k, r, i])
+            for i in N_all:
+                varrho[k, r, i] = solver.BoolVar(f'varrho_{k}_{r}_{i}')
+
+    p_tilde = {}
     for k in K:
         for r in R:
-            for i in N:
-                model += pl.lpSum(
-                    [y_tilde[k, r, i, j] for j in N_end if i != j]
-                ) - x_tilde[k, r, i] <= M_node * (lambda_var[k, r, i] + varrho[k, r, i])
-                model += pl.lpSum(
-                    [y_tilde[k, r, i, j] for j in N_end if i != j]
-                ) - x_tilde[k, r, i] >= -M_node * (
-                    lambda_var[k, r, i] + varrho[k, r, i]
-                )
+            for i in N_all:
+                p_tilde[k, r, i] = solver.NumVar(0, solver.infinity(), f'p_tilde_{k}_{r}_{i}')
 
-            model += varrho[k, r, 0] == 0
-            # model += lambda_var[k, r, end_depot_idx] == 0
-    # 14-15
+    a_tilde = {}
+    for k in K:
+        for i in N_all:
+            a_tilde[k, i] = solver.NumVar(0, solver.infinity(), f'a_tilde_{k}_{i}')
+
+    b_tilde = {}
+    for k in K:
+        for i in N_all:
+            b_tilde[k, i] = solver.NumVar(0, solver.infinity(), f'b_tilde_{k}_{i}')
+
+    h = {}
     for k in K:
         for r in R:
-            for i in N:
-                model += lambda_var[k, r, i] <= pl.lpSum(
-                    [y_tilde[k, r, i, j] for j in N_end if j != i]
-                )
-                model += (
-                    lambda_var[k, r, i]
-                    >= x[k, i]
-                    + pl.lpSum([y_tilde[k, r, i, j] for j in N_end if j != i])
-                    - 1
-                )
+            for i in N_all:
+                h[k, r, i] = solver.NumVar(0, solver.infinity(), f'h_{k}_{r}_{i}')
 
-    # 16-17
+    Z_lambda = {}
+    for k in K:
+        for r in R:
+            for i in N_all:
+                Z_lambda[k, r, i] = solver.NumVar(0, solver.infinity(), f'Z_lambda_{k}_{r}_{i}')
+
+    Z_varrho = {}
     for k in K:
         for r in R:
             for i in N_end:
-                model += varrho[k, r, i] <= pl.lpSum(
-                    [y_tilde[k, r, j, i] for j in N if j != i]
-                )
-                model += (
-                    varrho[k, r, i]
-                    >= x[k, i]
-                    + pl.lpSum([y_tilde[k, r, j, i] for j in N if j != i])
-                    - 1
-                )
+                Z_varrho[k, r, i] = solver.NumVar(0, solver.infinity(), f'Z_varrho_{k}_{r}_{i}')
 
-    # 18-21
-    for k in K:
-        for r in R:
-            for i in N:
-                for j in N_end:
-                    if i != j:
-                        model += z[k, i] - z[k, j] + 1 <= M * (1 - y[k, i, j])
-                        model += z[k, i] - z[k, j] + 1 >= -M * (1 - y[k, i, j])
-                        model += z_tilde[k, r, i] - z_tilde[k, r, j] + 1 <= M * (
-                            1 - y_tilde[k, r, i, j]
-                        )
-                        model += z_tilde[k, r, i] - z_tilde[k, r, j] + 1 >= -M * (
-                            1 - y_tilde[k, r, i, j]
-                        )
+    xi = {}
+    for i in N_all:
+        xi[i] = solver.NumVar(0, solver.infinity(), f'xi_{i}')
 
-    for k in K:
-        for r in R:
-            for i in N:
-                for j in N_end:
-                    if i != j:
-                        model += z[k, j] >= z[k, i] + 1 - M * (
-                            2 - lambda_var[k, r, i] - varrho[k, r, j]
-                        )
+    tardiness = solver.NumVar(0, solver.infinity(), 'tardiness')
 
-    # 22-23
-    for k in K:
-        model += p[k, 0] == pl.lpSum([q[u] * x[k, u] for u in L]) + pl.lpSum(
-            [q[u] * x_tilde[k, r, u] for u in L for r in R]
-            - pl.lpSum(Z_lambda[k, r, 0] for r in R)
+    # Objective function
+    cost_expr = solver.Sum([
+        y[k, i, j] * c * d[i][j]
+        for k in K for i in N_all for j in N_end if i != j
+    ]) + solver.Sum([
+        y_tilde[k, r, i, j] * c_tilde * d_tilde[i][j]
+        for k in K for r in R for i in N_all for j in N_end if i != j
+    ]) + solver.Sum([y[k, 0, j] * c_b for k in K for j in C])
+
+    solver.Minimize(w1 * cost_expr + w2 * tardiness)
+
+    # Constraints
+    # Tardiness constraints
+    for i in C:
+        solver.Add(tardiness >= xi[i] + s[i] - t_end[i])
+
+    # Each customer served once (constraint 3)
+    for i in C:
+        solver.Add(
+            solver.Sum([x[k, i] for k in K]) +
+            solver.Sum([x_tilde[k, r, i] for k in K for r in R]) == 1
         )
-        model += p[k, end_depot_idx] == -pl.lpSum(
-            [q[u] * x[k, u] for u in B]
-        ) - pl.lpSum([q[u] * x_tilde[k, r, u] for u in B for r in R])
 
-    # 24-25
+    # If no launching node, no edges traversed
+    for k in K:
+        for r in R:
+            solver.Add(
+                solver.Sum([y_tilde[k, r, i, j] for i in N for j in N_end if i != j]) <=
+                M * solver.Sum([lambda_var[k, r, i] for i in N])
+            )
+
+    # No launching and landing at same node
+    for k in K:
+        for r in R:
+            for i in C:
+                solver.Add(lambda_var[k, r, i] + varrho[k, r, i] <= 1)
+
+    for k in K:
+        for r in R:
+            for i in N:
+                for j in N_end:
+                    if i != j:
+                        solver.Add(
+                            y_tilde[k, r, i, j] <= solver.Sum([x_tilde[k, r, h] for h in C])
+                        )
+
+    # Constraints 4-5
+    for k in K:
+        solver.Add(solver.Sum([y[k, 0, j] for j in C]) <= 1)
+        solver.Add(solver.Sum([y[k, i, end_depot_idx] for i in C]) <= 1)
+
+    for k in K:
+        for i in C:
+            solver.Add(solver.Sum([y[k, j, i] for j in N if j != i]) == x[k, i])
+            solver.Add(solver.Sum([y[k, i, j] for j in N_end if j != i]) == x[k, i])
+
+    # Constraints 6-7
+    for k in K:
+        for r in R:
+            solver.Add(solver.Sum([lambda_var[k, r, i] for i in N]) <= 1)
+            solver.Add(solver.Sum([varrho[k, r, j] for j in N_end]) <= 1)
+            solver.Add(
+                solver.Sum([lambda_var[k, r, i] for i in N]) ==
+                solver.Sum([varrho[k, r, j] for j in N_end])
+            )
+
+    # Constraint 8
+    for k in K:
+        for r in R:
+            for i in C:
+                solver.Add(lambda_var[k, r, i] <= x[k, i])
+                solver.Add(varrho[k, r, i] <= x[k, i])
+
+    # Constraints 9-13
+    for k in K:
+        for r in R:
+            for i in C:
+                in_flow = solver.Sum([y_tilde[k, r, j, i] for j in N if i != j])
+                solver.Add(in_flow - x_tilde[k, r, i] <= M_node * (lambda_var[k, r, i] + varrho[k, r, i]))
+                solver.Add(in_flow - x_tilde[k, r, i] >= -M_node * (lambda_var[k, r, i] + varrho[k, r, i]))
+
+    for k in K:
+        for r in R:
+            for i in N:
+                out_flow = solver.Sum([y_tilde[k, r, i, j] for j in N_end if i != j])
+                solver.Add(out_flow - x_tilde[k, r, i] <= M_node * (lambda_var[k, r, i] + varrho[k, r, i]))
+                solver.Add(out_flow - x_tilde[k, r, i] >= -M_node * (lambda_var[k, r, i] + varrho[k, r, i]))
+
+            solver.Add(varrho[k, r, 0] == 0)
+            solver.Add(lambda_var[k, r, end_depot_idx] == 0)
+
+    # Constraints 14-15
+    for k in K:
+        for r in R:
+            for i in N:
+                solver.Add(lambda_var[k, r, i] <= solver.Sum([y_tilde[k, r, i, j] for j in N_end if j != i]))
+                solver.Add(
+                    lambda_var[k, r, i] >=
+                    x[k, i] + solver.Sum([y_tilde[k, r, i, j] for j in N_end if j != i]) - 1
+                )
+
+    # Constraints 16-17
+    for k in K:
+        for r in R:
+            for i in N_end:
+                solver.Add(varrho[k, r, i] <= solver.Sum([y_tilde[k, r, j, i] for j in N if j != i]))
+                solver.Add(
+                    varrho[k, r, i] >=
+                    x[k, i] + solver.Sum([y_tilde[k, r, j, i] for j in N if j != i]) - 1
+                )
+
+    # Constraints 18-21
+    for k in K:
+        for r in R:
+            for i in N:
+                for j in N_end:
+                    if i != j:
+                        solver.Add(z[k, i] - z[k, j] + 1 <= M * (1 - y[k, i, j]))
+                        solver.Add(z[k, i] - z[k, j] + 1 >= -M * (1 - y[k, i, j]))
+                        solver.Add(z_tilde[k, r, i] - z_tilde[k, r, j] + 1 <= M * (1 - y_tilde[k, r, i, j]))
+                        solver.Add(z_tilde[k, r, i] - z_tilde[k, r, j] + 1 >= -M * (1 - y_tilde[k, r, i, j]))
+
+    for k in K:
+        for r in R:
+            for i in N:
+                for j in N_end:
+                    if i != j:
+                        solver.Add(z[k, j] >= z[k, i] + 1 - M * (2 - lambda_var[k, r, i] - varrho[k, r, j]))
+
+    # Constraints 22-23
+    for k in K:
+        solver.Add(
+            p[k, 0] == solver.Sum([q[u] * x[k, u] for u in L]) +
+            solver.Sum([q[u] * x_tilde[k, r, u] for u in L for r in R]) -
+            solver.Sum([Z_lambda[k, r, 0] for r in R])
+        )
+        solver.Add(
+            p[k, end_depot_idx] == -solver.Sum([q[u] * x[k, u] for u in B]) -
+            solver.Sum([q[u] * x_tilde[k, r, u] for u in B for r in R])
+        )
+
+    # Constraints 24-25
     for k in K:
         for i in N:
             for j in N_end:
@@ -401,272 +419,236 @@ def run(filename):
                     continue
                 if i != j:
                     load_change = (
-                        -q[j]
-                        - pl.lpSum([Z_lambda[k, r, j] for r in R])
-                        + pl.lpSum([Z_varrho[k, r, j] for r in R])
+                        -q[j] -
+                        solver.Sum([Z_lambda[k, r, j] for r in R]) +
+                        solver.Sum([Z_varrho[k, r, j] for r in R])
                     )
-                    model += p[k, j] <= p[k, i] + load_change + M_Q * (1 - y[k, i, j])
-                    model += p[k, j] >= p[k, i] + load_change - M_Q * (1 - y[k, i, j])
+                    solver.Add(p[k, j] <= p[k, i] + load_change + M_Q * (1 - y[k, i, j]))
+                    solver.Add(p[k, j] >= p[k, i] + load_change - M_Q * (1 - y[k, i, j]))
 
     for k in K:
         for i in N_all:
-            model += p[k, i] <= Q
-            model += p[k, i] >= 0
+            solver.Add(p[k, i] <= Q)
+            solver.Add(p[k, i] >= 0)
 
-    # 26-35
+    # Constraints 26-35
     for k in K:
         for r in R:
             for j in N:
-                model += Z_lambda[k, r, j] <= p_tilde[k, r, j] + Q_tilde * (
-                    1 - lambda_var[k, r, j]
-                )
-                model += Z_lambda[k, r, j] <= Q_tilde * lambda_var[k, r, j]
-                model += Z_lambda[k, r, j] >= p_tilde[k, r, j] - Q_tilde * (
-                    1 - lambda_var[k, r, j]
-                )
+                solver.Add(Z_lambda[k, r, j] <= p_tilde[k, r, j] + Q_tilde * (1 - lambda_var[k, r, j]))
+                solver.Add(Z_lambda[k, r, j] <= Q_tilde * lambda_var[k, r, j])
+                solver.Add(Z_lambda[k, r, j] >= p_tilde[k, r, j] - Q_tilde * (1 - lambda_var[k, r, j]))
+
     for k in K:
         for r in R:
             for j in N_end:
-                model += Z_varrho[k, r, j] <= p_tilde[k, r, j] + Q_tilde * (
-                    1 - varrho[k, r, j]
-                )
-                model += Z_varrho[k, r, j] <= Q_tilde * varrho[k, r, j]
-                model += Z_varrho[k, r, j] >= p_tilde[k, r, j] - Q_tilde * (
-                    1 - varrho[k, r, j]
-                )
+                solver.Add(Z_varrho[k, r, j] <= p_tilde[k, r, j] + Q_tilde * (1 - varrho[k, r, j]))
+                solver.Add(Z_varrho[k, r, j] <= Q_tilde * varrho[k, r, j])
+                solver.Add(Z_varrho[k, r, j] >= p_tilde[k, r, j] - Q_tilde * (1 - varrho[k, r, j]))
 
-    # 36-37
+    # Constraints 36-37
     for k in K:
         for r in R:
-            drone_pickup = pl.lpSum([q[u] * x_tilde[k, r, u] for u in L])
+            drone_pickup = solver.Sum([q[u] * x_tilde[k, r, u] for u in L])
             for i in N:
-                model += p_tilde[k, r, i] <= drone_pickup + M_Q_tilde * (
-                    1 - lambda_var[k, r, i]
-                )
-                model += p_tilde[k, r, i] >= drone_pickup - M_Q_tilde * (
-                    1 - lambda_var[k, r, i]
-                )
+                solver.Add(p_tilde[k, r, i] <= drone_pickup + M_Q_tilde * (1 - lambda_var[k, r, i]))
+                solver.Add(p_tilde[k, r, i] >= drone_pickup - M_Q_tilde * (1 - lambda_var[k, r, i]))
 
-    # 38-39
+    # Constraints 38-39
     for k in K:
         for r in R:
-            drone_delivery = pl.lpSum([q[u] * x_tilde[k, r, u] for u in B])
+            drone_delivery = solver.Sum([q[u] * x_tilde[k, r, u] for u in B])
             for j in N_end:
-                model += p_tilde[k, r, j] >= drone_delivery - M_Q_tilde * (
-                    1 - varrho[k, r, j]
-                )
-                model += p_tilde[k, r, j] <= drone_delivery + M_Q_tilde * (
-                    1 - varrho[k, r, j]
-                )
+                solver.Add(p_tilde[k, r, j] >= drone_delivery - M_Q_tilde * (1 - varrho[k, r, j]))
+                solver.Add(p_tilde[k, r, j] <= drone_delivery + M_Q_tilde * (1 - varrho[k, r, j]))
 
-    # 40-41
+    # Constraints 40-41
     for k in K:
         for r in R:
             for i in N:
                 for j in N_end:
                     if i != j:
-                        model += p_tilde[k, r, j] <= p_tilde[k, r, i] - q[j] * x_tilde[
-                            k, r, j
-                        ] + M_Q_tilde * (1 - y_tilde[k, r, i, j])
-                        model += p_tilde[k, r, j] >= p_tilde[k, r, i] - q[j] * x_tilde[
-                            k, r, j
-                        ] - M_Q_tilde * (1 - y_tilde[k, r, i, j])
+                        solver.Add(
+                            p_tilde[k, r, j] <=
+                            p_tilde[k, r, i] - q[j] * x_tilde[k, r, j] + M_Q_tilde * (1 - y_tilde[k, r, i, j])
+                        )
+                        solver.Add(
+                            p_tilde[k, r, j] >=
+                            p_tilde[k, r, i] - q[j] * x_tilde[k, r, j] - M_Q_tilde * (1 - y_tilde[k, r, i, j])
+                        )
 
-    # 42
+    # Constraint 42
     for k in K:
         for r in R:
             for i in N + [end_depot_idx]:
-                model += p_tilde[k, r, i] <= Q_tilde
-                model += p_tilde[k, r, i] >= 0
+                solver.Add(p_tilde[k, r, i] <= Q_tilde)
+                solver.Add(p_tilde[k, r, i] >= 0)
 
-    # 43-45
+    # Constraints 43-45
     for i in C:
-        model += xi[i] >= t_start[i]
+        solver.Add(xi[i] >= t_start[i])
 
     for k in K:
         for i in C:
-            model += xi[i] >= a[k, i] - M_T * (1 - x[k, i])
-            # model += xi[i] <= a[k, i] + M_T * (1 - x[k, i])
+            solver.Add(xi[i] >= a[k, i] - M_T * (1 - x[k, i]))
+            solver.Add(xi[i] <= b[k, i] - s[i] + M_T * (1 - x[k, i]))
+
     for k in K:
         for r in R:
             for i in C:
-                model += xi[i] >= a_tilde[k, i] + tau_r - M_T * (1 - x_tilde[k, r, i])
-            # model += xi[i] <= a_tilde[k, i] + tau_r + M_T * (1 - x_tilde[k, r, i])
+                solver.Add(xi[i] >= a_tilde[k, i] + tau_r - M_T * (1 - x_tilde[k, r, i]))
+                solver.Add(xi[i] <= b_tilde[k, i] - s[i] + M_T * (1 - x_tilde[k, r, i]))
 
-    # 46-47
+    # Constraints 46-47
     for k in K:
         for i in N:
             for j in N_end:
                 if i != j:
-                    model += a[k, j] >= b[k, i] + t[i][j] - M_T * (1 - y[k, i, j])
-                    model += a[k, j] <= b[k, i] + t[i][j] + M_T * (1 - y[k, i, j])
+                    solver.Add(a[k, j] >= b[k, i] + t[i][j] - M_T * (1 - y[k, i, j]))
+                    solver.Add(a[k, j] <= b[k, i] + t[i][j] + M_T * (1 - y[k, i, j]))
 
-    # 48-49
+    # Constraints 48-49
     for k in K:
         for r in R:
             for i in N:
                 for j in N_end:
                     if i != j:
-                        model += a_tilde[k, j] >= b_tilde[k, i] + tau_l + t_tilde[i][
-                            j
-                        ] - M_T * (1 - y_tilde[k, r, i, j])
-                        model += a_tilde[k, j] <= b_tilde[k, i] + tau_l + t_tilde[i][
-                            j
-                        ] + M_T * (1 - y_tilde[k, r, i, j])
+                        solver.Add(
+                            a_tilde[k, j] >=
+                            b_tilde[k, i] + tau_l + t_tilde[i][j] - M_T * (1 - y_tilde[k, r, i, j])
+                        )
+                        solver.Add(
+                            a_tilde[k, j] <=
+                            b_tilde[k, i] + tau_l + t_tilde[i][j] + M_T * (1 - y_tilde[k, r, i, j])
+                        )
 
-    # 50
-    for k in K:
-        for i in C:
-            model += b[k, i] >= xi[i] + s[i] - M_T * (1 - x[k, i])
-
-    # 51
+    # Constraint 51
     for k in K:
         for r in R:
             for i in N:
-                model += b[k, i] >= b_tilde[k, i] - M_T * (1 - lambda_var[k, r, i])
-                model += b_tilde[k, i] >= a[k, i] - M_T * (1 - lambda_var[k, r, i])
-    # 52
-    for k in K:
-        for r in R:
-            for i in C:
-                model += b_tilde[k, i] >= xi[i] + s[i] - M_T * (1 - x_tilde[k, r, i])
+                solver.Add(b_tilde[k, i] <= b[k, i] + M_T * (1 - lambda_var[k, r, i]))
+                solver.Add(b_tilde[k, i] >= a[k, i] - M_T * (1 - lambda_var[k, r, i]))
 
-    # 53
-    # for k in K:
-    #    for r in R:
-    #        for i in N_end:
-    #            model += b_tilde[k, i] + tau_r <= a[k, i] + M_T * (1 - varrho[k, r, i])
-
-    # 54-55
+    # Constraints 54-55
     for k in K:
         for r in R:
             for j in N_end:
-                model += a_tilde[k, j] + h[k, r, j] + tau_r >= a[k, j] - M_T * (
-                    1 - varrho[k, r, j]
-                )
-                model += a_tilde[k, j] + h[k, r, j] + tau_r <= b[k, j] + M_T * (
-                    1 - varrho[k, r, j]
-                )
+                solver.Add(a_tilde[k, j] + h[k, r, j] + tau_r >= a[k, j] - M_T * (1 - varrho[k, r, j]))
+                solver.Add(a_tilde[k, j] + h[k, r, j] + tau_r <= b[k, j] + M_T * (1 - varrho[k, r, j]))
 
-    # 56-58
+    # Constraints 56-58
     for k in K:
         for r in R:
             for i in C:
-                model += h[k, r, i] >= xi[i] - a_tilde[k, i] - tau_r - M_T * (
-                    1 - x_tilde[k, r, i]
-                )
-                model += h[k, r, i] <= xi[i] - a_tilde[k, i] - tau_r + M_T * (
-                    1 - x_tilde[k, r, i]
-                )
-                model += h[k, r, i] >= 0
+                solver.Add(h[k, r, i] >= xi[i] - a_tilde[k, i] - tau_r - M_T * (1 - x_tilde[k, r, i]))
+                solver.Add(h[k, r, i] <= xi[i] - a_tilde[k, i] - tau_r + M_T * (1 - x_tilde[k, r, i]))
+                solver.Add(h[k, r, i] >= 0)
 
-    # 59
+    # Constraint 59
     for k in K:
         for r in R:
-            flight_time = pl.lpSum(
-                [
-                    y_tilde[k, r, i, j] * t_tilde[i][j]
-                    for i in N
-                    for j in N_end
-                    if i != j
-                ]
-            )
-            launch_time = pl.lpSum([lambda_var[k, r, i] * tau_l for i in N])
-            land_time = pl.lpSum([varrho[k, r, j] * tau_r for j in N_end])
-            service_time = pl.lpSum(
-                [x_tilde[k, r, i] * (tau_l + tau_r + s[i]) for i in C]
-            )
-            wait_time = pl.lpSum([h[k, r, i] for i in N])
+            flight_time = solver.Sum([
+                y_tilde[k, r, i, j] * t_tilde[i][j]
+                for i in N for j in N_end if i != j
+            ])
+            launch_time = solver.Sum([lambda_var[k, r, i] * tau_l for i in N])
+            land_time = solver.Sum([varrho[k, r, j] * tau_r for j in N_end])
+            service_time_total = solver.Sum([x_tilde[k, r, i] * (tau_l + tau_r + s[i]) for i in C])
+            wait_time = solver.Sum([h[k, r, i] for i in N])
 
-            total_time = (
-                flight_time + launch_time + land_time + service_time + wait_time
-            )
-            model += total_time <= T_tilde_max
+            total_time = flight_time + launch_time + land_time + service_time_total + wait_time
+            solver.Add(total_time <= T_tilde_max)
 
-    # 76-77
+    # Constraints 76-77
     for k in K:
         for r in R[:-1]:
             for i in N_end:
                 for j in N:
-                    model += z[k, j] >= z[k, i] - M * (
-                        2 - varrho[k, r, i] - lambda_var[k, r + 1, j]
-                    )
+                    solver.Add(z[k, j] >= z[k, i] - M * (2 - varrho[k, r, i] - lambda_var[k, r + 1, j]))
 
             for i in N_end:
                 for j in N:
-                    model += a_tilde[k, j] >= b_tilde[k, i] + tau_l - M_T * (
-                        2 - varrho[k, r, i] - lambda_var[k, r + 1, j]
+                    solver.Add(
+                        a_tilde[k, j] >=
+                        b_tilde[k, i] + tau_l - M_T * (2 - varrho[k, r, i] - lambda_var[k, r + 1, j])
                     )
 
-    # 78
+    # Constraint 78
     for k in K:
         for r in R[:-1]:
-            model += pl.lpSum(lambda_var[k, r + 1, i] for i in N) <= pl.lpSum(
-                lambda_var[k, r, i] for i in N
+            solver.Add(
+                solver.Sum([lambda_var[k, r + 1, i] for i in N]) <=
+                solver.Sum([lambda_var[k, r, i] for i in N])
             )
 
-    # 79
+    # Constraint 79
     for k in K:
         for r in R:
-            model += pl.lpSum(lambda_var[k, r, i] for i in N) <= pl.lpSum(
-                y[k, 0, j] for j in C
+            solver.Add(
+                solver.Sum([lambda_var[k, r, i] for i in N]) <=
+                solver.Sum([y[k, 0, j] for j in C])
             )
 
-    # 80
+    # Constraint 80
     for k in K[:-1]:
-        model += pl.lpSum(y[k, 0, j] for j in C) >= pl.lpSum(y[k + 1, 0, j] for j in C)
+        solver.Add(
+            solver.Sum([y[k, 0, j] for j in C]) >=
+            solver.Sum([y[k + 1, 0, j] for j in C])
+        )
 
-    print(
-        f"Model created with {len(model.variables())} variables and {len(model.constraints)} constraints"
-    )
+    print(f"Model created with {solver.NumVariables()} variables and {solver.NumConstraints()} constraints")
     print("\nSolving the model")
 
-    model.writeLP("model.lp")
+    # Set solver parameters
+    solver.SetTimeLimit(36000 * 1000)  # 36000 seconds in milliseconds
+    
+    start_time = time.time()
+    status = solver.Solve()
+    running_time = time.time() - start_time
 
-    solver = pl.PULP_CBC_CMD(timeLimit=36000, gapRel=0.05, msg=True)
-
-    model.solve(solver)
-
-    if model.status == pl.LpStatusOptimal or model.status == pl.LpStatusNotSolved:
+    if status == pywraplp.Solver.OPTIMAL or status == pywraplp.Solver.FEASIBLE:
+        status_str = "Optimal" if status == pywraplp.Solver.OPTIMAL else "Feasible"
+        
         result_data = {
             "weights": {
                 "cost": w1,
-                "makespan": w2,
-                "wait": 0.0,  # Adjust if you add a weight for wait time
+                "tardiness": w2,
             },
-            "objective": round(pl.value(model.objective), 2),
+            "status": status_str,
+            "objective": solver.Objective().Value(),
+            "time": running_time,
             "routes": [],
         }
 
         print("[TEST]: x")
         for k, v in x.items():
-            print(f"\t {k, pl.value(v)}")
+            print(f"\t {k}: {v.solution_value()}")
         print("[TEST]: x_tilde")
         for k, v in x_tilde.items():
-            print(f"\t {k, pl.value(v)}")
+            print(f"\t {k}: {v.solution_value()}")
         print("[TEST]: y")
         for k, v in y.items():
-            print(f"\t {k, pl.value(v)}")
+            print(f"\t {k}: {v.solution_value()}")
         print("[TEST]: y_tilde")
         for k, v in y_tilde.items():
-            print(f"\t {k, pl.value(v)}")
+            print(f"\t {k}: {v.solution_value()}")
 
         print("[TEST]: lambda")
         for k, v in lambda_var.items():
-            print(f"\t {k, pl.value(v)}")
+            print(f"\t {k}: {v.solution_value()}")
 
         print("[TEST]: varrho")
         for k, v in varrho.items():
-            print(f"\t {k, pl.value(v)}")
+            print(f"\t {k}: {v.solution_value()}")
         print("[TEST]: p", Q)
         for k, v in p.items():
-            print(f"\t {k, pl.value(v)}")
+            print(f"\t {k}: {v.solution_value()}")
         print("[TEST]: p_tilde", Q_tilde)
         for k, v in p_tilde.items():
-            print(f"\t {k, pl.value(v)}")
+            print(f"\t {k}: {v.solution_value()}")
 
-        print("[TEST]: tardiness")
-        print(pl.value(tardiness))
+        print("[TEST]: cost")
+        print(cost_expr.solution_value())
 
         for k in K:
             route = [0]
@@ -680,8 +662,8 @@ def run(filename):
                 for j in N_end:  # Use N_all to ensure end_depot_idx is reachable
                     if (
                         j not in visited
-                        and y[k, current, j].varValue
-                        and pl.value(y[k, current, j]) > 0.5
+                        and y[k, current, j].solution_value()
+                        and y[k, current, j].solution_value() > 0.5
                     ):
                         route.append(j)
                         visited.add(j)
@@ -697,11 +679,15 @@ def run(filename):
                     "id": int(k),
                     "route": route,
                     "arrival": [
-                        round(pl.value(a[k, i]), 2) if idx > 0 else None
+                        a[k, i].solution_value() if idx > 0 else None
                         for idx, i in enumerate(route)
                     ],
                     "departure": [
-                        round(pl.value(b[k, i]), 2) if idx < len(route) - 1 else None
+                        b[k, i].solution_value() if idx < len(route) - 1 else None
+                        for idx, i in enumerate(route)
+                    ],
+                    "service": [
+                        xi[i].solution_value() if idx < len(route) - 1 and idx > 0 else None
                         for idx, i in enumerate(route)
                     ],
                     "trips": [],
@@ -714,8 +700,8 @@ def run(filename):
                     launch_nodes = [
                         i
                         for i in N
-                        if pl.value(lambda_var[k, r, i])
-                        and pl.value(lambda_var[k, r, i]) > 0.5
+                        if lambda_var[k, r, i].solution_value()
+                        and lambda_var[k, r, i].solution_value() > 0.5
                     ]
 
                     if launch_nodes:
@@ -730,8 +716,8 @@ def run(filename):
                             for j in N_all:
                                 if (
                                     j not in drone_visited
-                                    and y_tilde[k, r, drone_current, j].varValue
-                                    and pl.value(y_tilde[k, r, drone_current, j]) > 0.5
+                                    and y_tilde[k, r, drone_current, j].solution_value()
+                                    and y_tilde[k, r, drone_current, j].solution_value() > 0.5
                                 ):
                                     drone_route.append(j)
                                     drone_visited.add(j)
@@ -748,12 +734,18 @@ def run(filename):
                             "id": int(r),
                             "route": drone_route,
                             "arrival": [
-                                round(pl.value(a_tilde[k, i]), 2) if idx > 0 else None
+                                a_tilde[k, i].solution_value() if idx > 0 else None
                                 for idx, i in enumerate(drone_route)
                             ],
                             "departure": [
-                                round(pl.value(b_tilde[k, i]), 2)
+                                b_tilde[k, i].solution_value()
                                 if idx < len(drone_route) - 1
+                                else None
+                                for idx, i in enumerate(drone_route)
+                            ],
+                            "service": [
+                                xi[i].solution_value()
+                                if idx < len(drone_route) - 1 and idx > 0
                                 else None
                                 for idx, i in enumerate(drone_route)
                             ],
