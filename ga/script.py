@@ -16,21 +16,7 @@ from moo_algorithm.nsga_ii import run_nsga_ii
 from moo_algorithm.nsga_iii import run_nsga_iii
 from moo_algorithm.pfg_moea import run_pfgmoea
 from moo_algorithm.agea import run_agea
-from moo_algorithm.iagea import run_iagea
-
-ALGORITHMS = {
-    "AGEA": {
-        "runner": run_agea,
-        "params": {
-            "init_div": 10,
-            "crossover_operator": crossover_PMX,
-            "mutation_operator": mutation_flip,
-            "crossover_rate": 0.9,
-            "mutation_rate": 0.1,
-        },
-        "ref_point": [24, 100000],
-    },
-}
+from run import ALGORITHMS
 
 
 def run_algorithm_on_data(
@@ -153,7 +139,7 @@ def main():
 
             for data_file in files:
                 print(f"Processing: {data_file.name}")
-                if data_file.match("S042_N20_RC_R50.json"):
+                if data_file.match("S046_N10_R_*.json"):
                     try:
                         # Load problem
                         problem = Problem(str(data_file))
@@ -189,6 +175,7 @@ def main():
 
                         traceback.print_exc()
                         continue
+            break
     print(f"\n{'=' * 80}")
     print("All experiments completed!")
     print(f"{'=' * 80}\n")
