@@ -232,7 +232,10 @@ def mutation_flip(problem: Problem, indi: Individual, num_flips=None):
 
     flip_positions = random.sample(range(size), num_flips)
     for pos in flip_positions:
-        new_bin[pos] = 1 - new_bin[pos]  # lật bit
+        if new_bin[pos]:
+            new_bin[pos] = 0
+        else:
+            new_bin[pos] = random.choice([-1, 1])
 
     # tạo offspring mới
     offspring = Individual([perm.copy(), new_bin])

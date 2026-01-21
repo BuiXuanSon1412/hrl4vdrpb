@@ -17,10 +17,10 @@ def cal_HV_algorithm(data_name, number_customers, algorithm):
     return hv_value
 
 
-algorithms = ["NSGA_II", "NSGA_III", "MOEAD", "PFG_MOEA", "AGEA"]
+algorithms = ["NSGA_II", "NSGA_III", "MOEAD", "PFG_MOEA", "AGEA", "IAGEA"]
 
 
 if __name__ == "__main__":
     for algor in algorithms:
-        hv = cal_HV_algorithm("S042_N200_RC_R50", 200, algor)
+        hv = cal_HV_algorithm("S043_N50_RC_R50", 50, algor)
         print(f"{algor}: HV = {hv}")

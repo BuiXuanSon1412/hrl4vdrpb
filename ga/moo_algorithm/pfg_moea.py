@@ -70,7 +70,7 @@ def Generation_PFG(pop, GK, knee_point, nadir_point, sigma):
     PFG = [[[] for _ in range(GK)] for _ in range(len(knee_point))]
 
     for idx, indi in enumerate(pop.indivs):
-        for j in range(2):
+        for j in range(len(indi.objectives)):
             grid_value = int(Grid[idx][j])
             if 0 <= grid_value < GK:
                 PFG[j][grid_value].append(indi)
