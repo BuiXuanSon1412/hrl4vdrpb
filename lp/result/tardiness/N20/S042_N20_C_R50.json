@@ -3,7 +3,7 @@
     "cost": 0.0,
     "tardiness": 1.0
   },
-  "status": "Optimal",
+  "status": "Feasible",
   "objective": 3.9039232,
   "time": 35995.68330478668,
   "routes": [
