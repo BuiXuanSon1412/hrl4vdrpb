@@ -343,10 +343,10 @@ def run_agea(
         # Select solutions that can enter grid (first N_pop from fronts)
         grid_candidates = []
         for front in fronts:
-            if len(grid_candidates) + len(front) <= pop_size * 2:
+            if len(grid_candidates) + len(front) <= int(pop_size * 1.5):
                 grid_candidates.extend(front)
             else:
-                remaining = pop_size * 2 - len(grid_candidates)
+                remaining = int(pop_size * 1.5) - len(grid_candidates)
                 grid_candidates.extend(front[:remaining])
                 break
 

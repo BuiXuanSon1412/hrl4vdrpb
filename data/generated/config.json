@@ -8,6 +8,9 @@
     "DRONE_DURATION_H": 1.0,
     "CAPACITY_TRUCK": 200,
     "CAPACITY_DRONE": 20,
+    "DRONE_COST_UNIT": 1,
+    "TRUCK_COST_UNIT": 25,
+    "FLEET_BASIS_COST": 500,
     "DEMAND_RANGE_BACKHAUL": [-30, -1],
     "DEMAND_RANGE_LINEHAUL": [1, 30],
     "TIME_WINDOW_SCALING_FACTOR": 1.5,
@@ -17,6 +20,7 @@
         "50": 6,
         "100": 12,
         "200": 20,
-        "400": 40
+        "400": 40,
+        "1000": 80
     }
 }

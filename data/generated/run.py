@@ -10,7 +10,7 @@ def run():
         config = json.load(f)
 
     # Define all possible batches based on your config and script choices
-    node_sizes = [10, 20, 50, 100, 200, 400]
+    node_sizes = [10, 20, 50, 100, 200, 400, 1000]
     distributions = ["R", "C", "RC"]
     instances_per_batch = 5
     base_seed = 42

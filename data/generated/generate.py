@@ -153,7 +153,7 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     # Updated default to reflect requested batch range
     parser.add_argument(
-        "--n", type=int, choices=[10, 20, 50, 100, 200, 400], default=100
+        "--n", type=int, choices=[10, 20, 50, 100, 200, 400, 1000], default=1000
     )
     parser.add_argument("--dist", choices=["R", "C", "RC"], default="RC")
     parser.add_argument("--ratio", type=float, default=0.5)

@@ -1,116 +1,28 @@
 import os
 import sys
-import time
-import json
 from pathlib import Path
-from typing import Callable, Dict, Any
 
 # Add parent directory to path
 sys.path.append(os.path.dirname(os.path.abspath(__file__)))
 
 from problem import Problem
-from utils import init_population, cal_fitness, cal_tardiness, cal_cost, decode
-from operators import crossover_PMX, mutation_flip
-from moo_algorithm.moead import run_moead, init_weight_vectors_2d
-from moo_algorithm.nsga_ii import run_nsga_ii
-from moo_algorithm.nsga_iii import run_nsga_iii
-from moo_algorithm.pfg_moea import run_pfgmoea
-from moo_algorithm.agea import run_agea
-from run import ALGORITHMS
+from utils import init_population
+from config import ALGORITHMS
+from run import run_algorithm_on_data, get_data_files, save_result
 
-
-def run_algorithm_on_data(
-    algorithm_runner: Callable,
-    algorithm_params: Dict[str, Any],
-    problem: Problem,
-    indi_list: list,
-    pop_size: int,
-    max_gen: int,
-    processing_number: int = 4,
-) -> Dict[str, Any]:
-    """
-    Utility function to run an algorithm and measure execution time.
-
-    Args:
-        algorithm_runner: Function to run the algorithm
-        algorithm_params: Dictionary of algorithm-specific parameters
-        problem: Problem instance
-        indi_list: Initial population list
-        pop_size: Population size
-        max_gen: Maximum generations
-        processing_number: Number of processes for multiprocessing
-
-    Returns:
-        Dictionary containing 'time' and 'history' keys
-    """
-    start_time = time.time()
-
-    # Merge common parameters with algorithm-specific ones
-    params = {
-        "processing_number": processing_number,
-        "problem": problem,
-        "indi_list": indi_list,
-        "pop_size": pop_size,
-        "max_gen": max_gen,
-        "cal_fitness": cal_fitness,
-        **algorithm_params,
-    }
-
-    history = algorithm_runner(**params)
-
-    end_time = time.time()
-
-    return {"time": end_time - start_time, "history": history}
-
-
-def get_data_files(base_dir: str = "../data/generated/data") -> Dict[str, list]:
-    """
-    Get all JSON data files organized by problem size.
-
-    Returns:
-        Dictionary mapping size folder (e.g., 'N10') to list of file paths
-    """
-    data_files = {}
-    base_path = Path(base_dir)
-
-    if not base_path.exists():
-        print(f"Warning: Data directory {base_dir} does not exist!")
-        return data_files
-
-    # Iterate through size directories (N10, N20, N50, etc.)
-    for size_dir in sorted(base_path.iterdir()):
-        if size_dir.is_dir() and size_dir.name.startswith("N"):
-            json_files = list(size_dir.glob("*.json"))
-            if json_files:
-                data_files[size_dir.name] = sorted(json_files)
-
-    return data_files
-
-
-def save_result(result: Dict[str, Any], output_path: Path):
-    """
-    Save result to JSON file.
-
-    Args:
-        result: Result dictionary to save
-        output_path: Path to output file
-    """
-    output_path.parent.mkdir(parents=True, exist_ok=True)
-
-    with open(output_path, "w") as f:
-        json.dump(result, f, indent=2)
-
-    print(f"Saved result to {output_path}")
+size_dirs = ["N100", "N200"]
+algorithms = ["NSGA_II", "NSGA_III", "MOEAD", "PFG_MOEA", "AGEA"]
 
 
 def main():
     # Configuration
     POP_SIZE = 100
-    MAX_GEN = 100
+    MAX_GEN = 200
     PROCESSING_NUMBER = 12
-    SEED = 42
+    INITIAL_SEED = 42  # Renamed to clarify it's the starting point
     BASE_DATA_DIR = "../data/generated/data"
     BASE_RESULT_DIR = "./result"
+    NUM_RUNS = 5  # Number of times to run each instance
 
     # Get all data files
     data_files = get_data_files(BASE_DATA_DIR)
@@ -119,33 +31,59 @@ def main():
         print("No data files found!")
         return
 
-    print(f"Found {len(data_files)} problem size categories")
-    for size, files in data_files.items():
-        print(f"  {size}: {len(files)} files")
+    # Loop for multiple runs (1 to 5)
+    for run_count in range(1, NUM_RUNS + 1):
+        # Update seed for this specific run
+        current_seed = INITIAL_SEED + (run_count - 1)
 
-    # Run each algorithm on each data file
-    for size_dir, files in data_files.items():
-        for algorithm_name, algorithm_config in ALGORITHMS.items():
-            print(f"\n{'=' * 80}")
-            print(f"Running {algorithm_name}")
-            print(f"{'=' * 80}\n")
+        print(f"\n{'#' * 80}")
+        print(f"### STARTING BATCH RUN {run_count} (SEED: {current_seed}) ###")
+        print(f"{'#' * 80}\n")
 
-            algorithm_runner = algorithm_config["runner"]
-            algorithm_params = algorithm_config["params"]
+        # Original logic nested inside the run loop
+        for size_dir, files in data_files.items():
+            if size_dir not in size_dirs:
+                continue
 
-            print(f"\n{'-' * 80}")
-            print(f"{algorithm_name} on {size_dir}")
-            print(f"{'-' * 80}\n")
+            for algorithm_name, algorithm_config in ALGORITHMS.items():
+                if algorithm_name not in algorithms:
+                    continue
 
-            for data_file in files:
-                print(f"Processing: {data_file.name}")
-                if data_file.match("S046_N10_R_*.json"):
+                algorithm_runner = algorithm_config["runner"]
+                algorithm_params = algorithm_config["params"]
+
+                print(f"\n{'=' * 40}")
+                print(
+                    f"Run {run_count} | Algorithm: {algorithm_name} | Size: {size_dir}"
+                )
+                print(f"{'=' * 40}")
+
+                for data_file in files:
+                    # Update output path structure: result/{count}/{algorithm}/N{nodes}/{file_name}.json
+                    output_path = (
+                        Path(BASE_RESULT_DIR)
+                        / str(run_count)  # Store in count folder (1, 2, 3, 4, 5)
+                        / algorithm_name
+                        / size_dir
+                        / data_file.name
+                    )
+
+                    # Create parent directories if they don't exist
+                    output_path.parent.mkdir(parents=True, exist_ok=True)
+
+                    # Check if result already exists to avoid redundant work
+                    if output_path.exists():
+                        print(f"  Skipping: {data_file.name} (already exists)")
+                        continue
+
+                    print(f"  Processing: {data_file.name}")
+
                     try:
                         # Load problem
                         problem = Problem(str(data_file))
 
-                        # Initialize population
-                        indi_list = init_population(POP_SIZE, SEED, problem)
+                        # Initialize population with the INCREMENTED seed
+                        indi_list = init_population(POP_SIZE, current_seed, problem)
 
                         # Run algorithm
                         result = run_algorithm_on_data(
@@ -159,26 +97,20 @@ def main():
                         )
 
                         # Save result
-                        output_path = (
-                            Path(BASE_RESULT_DIR)
-                            / algorithm_name
-                            / size_dir
-                            / data_file.name
-                        )
                         save_result(result, output_path)
 
-                        print(f"  Completed in {result['time']:.2f} seconds")
+                        print(f"    Completed in {result['time']:.2f} seconds")
 
                     except Exception as e:
-                        print(f"  ERROR: {str(e)}")
+                        print(f"    ERROR on {data_file.name}: {str(e)}")
                         import traceback
 
                         traceback.print_exc()
                         continue
-            break
-    print(f"\n{'=' * 80}")
-    print("All experiments completed!")
-    print(f"{'=' * 80}\n")
+
+    print(f"\\n{'=' * 80}")
+    print("All 5 batch runs completed!")
+    print(f"{'=' * 80}\\n")
 
 
 if __name__ == "__main__":

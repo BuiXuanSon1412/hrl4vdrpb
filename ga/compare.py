@@ -13,14 +13,15 @@ def cal_HV_algorithm(data_name, number_customers, algorithm):
         data = json.load(f)
 
     objectives_list = data["history"]["99"]
-    hv_value = cal_hv(np.array(objectives_list), ref_point=np.array([100, 500000]))
+    hv_value = cal_hv(np.array(objectives_list), ref_point=np.array([100, 700000]))
     return hv_value
 
 
-algorithms = ["NSGA_II", "NSGA_III", "MOEAD", "PFG_MOEA", "AGEA", "IAGEA"]
+
+algorithms = ["NSGA_II", "NSGA_III", "MOEAD", "PFG_MOEA", "AGEA"]
 
 
 if __name__ == "__main__":
     for algor in algorithms:
-        hv = cal_HV_algorithm("S043_N50_RC_R50", 50, algor)
+        hv = cal_HV_algorithm("S042_N100_R_R50", 100, algor)
         print(f"{algor}: HV = {hv}")

@@ -3,11 +3,14 @@ import sys
 import os
 import numpy as np
 from typing import cast, Any
+from copy import deepcopy
+import random
 
 # Add the parent directory to the module search path
 sys.path.append(os.path.dirname(os.path.abspath(__file__)) + "/..")
 from moo_algorithm.metric import cal_hv_front
-from population import Population
+from population import Population, Individual
+from local_move import local_insert, local_flip, local_swap, local_invert
 
 
 class IAGEAPopulation(Population):
@@ -263,6 +266,48 @@ class IAGEAPopulation(Population):
 
         return ParetoFront
 
+    def adaptive_local_search(
+        self, individual, problem, generation, max_gen, current_population
+    ):
+        """Apply local search focusing on sparse grid regions"""
+
+        # Probability decreases over time
+        ls_probability = 0.3 * (1 - generation / max_gen)
+
+        if np.random.random() > ls_probability:
+            return individual
+
+        # *** USE GRID-BASED SELECTION ***
+        # Check if this individual's region is crowded
+        if hasattr(individual, "objectives") and individual.objectives:
+            grid_spacing = self.calculate_grid_spacing()
+            lower_boundaries = self.calculate_lower_boundaries(grid_spacing)
+            ind_grid = self.calculate_grid_index(
+                individual, lower_boundaries, grid_spacing
+            )
+
+            # Count how many solutions in same grid
+            grid_count = sum(1 for idx in self.grid_indices if idx == ind_grid)
+
+            # Skip local search if this grid is already crowded (>2 solutions)
+            if grid_count > 2:
+                return individual
+
+        # Apply local search moves
+        improved = Individual(deepcopy(individual.chromosome))
+
+        for _ in range(random.randint(2, 3)):
+            move_type = random.choice(["swap", "insert", "invert"])
+
+            if move_type == "swap":
+                improved = local_swap(improved)
+            elif move_type == "insert":
+                improved = local_insert(improved)
+            else:
+                improved = local_invert(improved)
+
+        return improved
+
 
 def run_iagea(
     processing_number,
@@ -281,6 +326,7 @@ def run_iagea(
     history = {}
 
     iagea_pop = IAGEAPopulation(pop_size, init_div)
+
     iagea_pop.pre_indi_gen(indi_list)
 
     pool = multiprocessing.Pool(processing_number)
@@ -312,7 +358,6 @@ def run_iagea(
     Pareto_store = [list(indi.objectives) for indi in iagea_pop.ParetoFront[0]]
     history[0] = Pareto_store
     print("Generation 0: Done")
-
     # Evolution loop
     for gen in range(max_gen):
         # Generate offspring
@@ -324,15 +369,27 @@ def run_iagea(
             mutation_rate,
         )
 
+        # Apply local search to some offspring
+        ls_offspring = []
+        for off in offspring:
+            if np.random.random() < 0.4:  # 15% get local search
+                improved = iagea_pop.adaptive_local_search(
+                    off, problem, gen, max_gen, None
+                )
+                # ls_offspring.append(improved)
+                ls_offspring.append(off)
+            else:
+                ls_offspring.append(off)
+
         # Evaluate offspring
-        arg = [(problem, individual) for individual in offspring]
+        arg = [(problem, individual) for individual in ls_offspring]
         result = pool.starmap(cal_fitness, arg)
-        for individual, fitness in zip(offspring, result):
+        for individual, fitness in zip(ls_offspring, result):
             individual.chromosome = fitness[0]
             individual.objectives = fitness[1:]
 
         # Combine population and offspring
-        combined = iagea_pop.indivs + offspring
+        combined = iagea_pop.indivs + ls_offspring
 
         # Update ideal point
         iagea_pop.update_ideal_point(combined)
@@ -343,10 +400,10 @@ def run_iagea(
         # Select solutions that can enter grid (first N_pop from fronts)
         grid_candidates = []
         for front in fronts:
-            if len(grid_candidates) + len(front) <= pop_size * 2:
+            if len(grid_candidates) + len(front) <= pop_size * 1.5:
                 grid_candidates.extend(front)
             else:
-                remaining = pop_size * 2 - len(grid_candidates)
+                remaining = pop_size * 1.5 - len(grid_candidates)
                 grid_candidates.extend(front[:remaining])
                 break
 
@@ -368,7 +425,6 @@ def run_iagea(
         print(f"Generation {gen + 1}: Done")
         Pareto_store = [list(indi.objectives) for indi in iagea_pop.ParetoFront[0]]
         history[gen + 1] = Pareto_store
-
     pool.close()
     print(
         "IAGEA Done: ", cal_hv_front(iagea_pop.ParetoFront[0], np.array([10, 100000]))

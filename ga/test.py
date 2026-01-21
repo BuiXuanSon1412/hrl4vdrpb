@@ -17,20 +17,9 @@ from moo_algorithm.nsga_iii import run_nsga_iii
 from moo_algorithm.pfg_moea import run_pfgmoea
 from moo_algorithm.agea import run_agea
 from moo_algorithm.iagea import run_iagea
+from config import ALGORITHMS
 
-ALGORITHMS = {
-    "AGEA": {
-        "runner": run_agea,
-        "params": {
-            "init_div": 10,
-            "crossover_operator": crossover_PMX,
-            "mutation_operator": mutation_flip,
-            "crossover_rate": 0.9,
-            "mutation_rate": 0.1,
-        },
-        "ref_point": [24, 100000],
-    },
-}
+algorithms = ["AGEA"]
 
 
 def run_algorithm_on_data(
@@ -120,7 +109,7 @@ def save_result(result: Dict[str, Any], output_path: Path):
 def main():
     # Configuration
     POP_SIZE = 100
-    MAX_GEN = 100
+    MAX_GEN = 200
     PROCESSING_NUMBER = 12
     SEED = 42
     BASE_DATA_DIR = "../data/generated/data"
@@ -140,6 +129,8 @@ def main():
     # Run each algorithm on each data file
     for size_dir, files in data_files.items():
         for algorithm_name, algorithm_config in ALGORITHMS.items():
+            if algorithm_name not in algorithms:
+                continue
             print(f"\n{'=' * 80}")
             print(f"Running {algorithm_name}")
             print(f"{'=' * 80}\n")
@@ -153,7 +144,7 @@ def main():
 
             for data_file in files:
                 print(f"Processing: {data_file.name}")
-                if data_file.match("S042_N20_RC_R50.json"):
+                if data_file.match("S042_N400_R_R50.json"):
                     try:
                         # Load problem
                         problem = Problem(str(data_file))
