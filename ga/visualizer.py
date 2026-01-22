@@ -4,9 +4,6 @@ import matplotlib.pyplot as plt
 import numpy as np
 from pathlib import Path
 
-# --- Import your existing functions ---
-# Assuming your functions are in a file named metrics_util.py
-# or change this to match your project structure
 from moo_algorithm.metric import cal_hv
 
 # --- Configuration ---
@@ -94,10 +91,17 @@ def main():
             print(f"Error processing {json_file}: {e}")
 
 
+files = ["S043_N100_RC_R50.json"]
+algorithms = ["NSGA_II", "NSGA_III", "MOEAD", "PFG_MOEA", "AGEA", "IAGEA", "CIAGEA"]
+
+RESULT_DIR = "./result/"
 if __name__ == "__main__":
     # main()
-    json_file = "./result/AGEA/N400/S042_N400_R_R50.json"
-    try:
-        visualize_instance(str(json_file))
-    except Exception as e:
-        print(f"Error processing {json_file}: {e}")
+    for algo in algorithms:
+        for file in files:
+            size_dir = file.split("_")[1]
+            json_file = Path(RESULT_DIR) / algo / size_dir / file
+            try:
+                visualize_instance(str(json_file))
+            except Exception as e:
+                print(f"Error processing {json_file}: {e}")
