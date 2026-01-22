@@ -10,8 +10,8 @@
             "NUM_CLUSTERS": 26
         },
         "Vehicles": {
-            "NUM_TRUCKS": 40,
-            "NUM_DRONES": 40,
+            "NUM_TRUCKS": 32,
+            "NUM_DRONES": 32,
             "V_TRUCK_KM_H": 40.0,
             "V_DRONE_KM_H": 60.0,
             "CAPACITY_TRUCK": 200,
