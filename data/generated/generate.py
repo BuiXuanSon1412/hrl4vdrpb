@@ -18,8 +18,13 @@ def generate_coords(num_customers, max_coord, dist_type, seed):
         centers = []
 
         # Define cluster spread (standard deviation)
-        std_dev = max_coord / 25  # ~4.0 km
-        # Minimum distance between cluster centers (3 * std_dev ensures minimal overlap)
+        if num_customers <= 200:
+            std_dev = max_coord / 25  # ~4.0 km
+        elif num_customers <= 400:
+            std_dev = max_coord / 32  # ~3.125 km
+        else:
+            std_dev = max_coord / 40  # ~2.5 km
+        # Minimum distance between cluster centers (4 * std_dev ensures minimal overlap)
         min_dist = std_dev * 4  # ~16.0 km
 
         while remaining_nodes > 0:
