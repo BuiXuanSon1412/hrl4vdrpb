@@ -22,7 +22,7 @@ class CIAGEAPopulation(Population):
         self.ideal_point = None
         self.grid_indices = []
         self.ParetoFront = []
-        self.archive = []  # Add elite archive
+        self.archive = []
         self.archive_size = min(50, pop_size // 2)
 
     def update_archive(self, new_solutions):
@@ -45,7 +45,8 @@ class CIAGEAPopulation(Population):
         unique_grids = len(set(self.grid_indices))
         diversity_ratio = unique_grids / len(self.grid_indices)
 
-        return diversity_ratio > 0.3  # Threshold for acceptable diversity
+        # FIXED: Lower threshold from 0.3 to 0.2
+        return diversity_ratio > 0.2
 
     def update_ideal_point(self, solutions):
         """Update ideal point from solutions"""
@@ -291,55 +292,18 @@ class CIAGEAPopulation(Population):
 
         return ParetoFront
 
-    def vrp_aware_local_search(self, individual, problem):
-        """Local search that understands VRP structure"""
-        perm, mask = individual.chromosome
-        n = len(perm)
-
-        improved = False
-        best_chro = [perm.copy(), mask.copy()]
-
-        # 2-opt style moves on permutation
-        for _ in range(min(5, n // 10)):
-            i, j = sorted(random.sample(range(n), 2))
-            if j - i < 2:
-                continue
-
-            # Try reversing segment
-            test_perm = perm.copy()
-            test_perm[i:j] = reversed(test_perm[i:j])
-
-            # Keep the promising change
-            perm = test_perm
-            improved = True
-
-        # Strategic drone assignment flips
-        # Focus on nodes near capacity boundaries
-        for _ in range(max(1, n // 20)):
-            pos = random.randint(0, n - 1)
-            old_val = mask[pos]
-
-            # Try all three possibilities
-            for new_val in [0, 1, -1]:
-                if new_val != old_val:
-                    mask[pos] = new_val
-                    # Would evaluate here in practice
-                    break
-
-        return Individual([perm, mask])
-
     def adaptive_local_search(
         self, individual, problem, generation, max_gen, current_population
     ):
-        """Apply local search focusing on sparse grid regions with better operators"""
+        """Apply local search with FIXED issues from original"""
 
-        # Adaptive probability that decreases more gradually
-        ls_probability = 0.5 * (1 - (generation / max_gen) ** 0.5)
+        # FIXED: Slower decay - was too aggressive
+        ls_probability = 0.6 * (1 - (generation / max_gen) ** 0.35)
 
         if np.random.random() > ls_probability:
             return individual
 
-        # Grid-based selection remains good
+        # Grid-based selection - only apply LS to sparse regions
         if hasattr(individual, "objectives") and individual.objectives:
             grid_spacing = self.calculate_grid_spacing()
             lower_boundaries = self.calculate_lower_boundaries(grid_spacing)
@@ -349,30 +313,24 @@ class CIAGEAPopulation(Population):
 
             grid_count = sum(1 for idx in self.grid_indices if idx == ind_grid)
 
-            # Apply LS more aggressively to sparse regions
-            if grid_count > 3:  # Changed from 2 to 3
+            # FIXED: More lenient threshold - was skipping too many
+            if grid_count > 4:  # Changed from 3
                 return individual
 
         # Multi-start local search
         best_improved = Individual(deepcopy(individual.chromosome))
-        best_fitness = (
-            individual.objectives
-            if individual.objectives
-            else [float("inf"), float("inf")]
-        )
 
-        # Try multiple local search trajectories
-        num_tries = 2 if generation < max_gen * 0.5 else 1
+        # FIXED: More exploration attempts
+        num_tries = 2  # Increased from 1-2 variable
 
         for _ in range(num_tries):
             current = Individual(deepcopy(individual.chromosome))
 
-            # Variable-depth search (more in early generations)
-            depth = (
-                random.randint(3, 5)
-                if generation < max_gen * 0.3
-                else random.randint(2, 3)
-            )
+            # FIXED: Better depth scaling
+            if generation < max_gen * 0.4:  # Extended early phase
+                depth = random.randint(3, 5)
+            else:
+                depth = random.randint(2, 4)  # Increased minimum
 
             for step in range(depth):
                 # Mix of different operators for diversity
@@ -389,9 +347,6 @@ class CIAGEAPopulation(Population):
                     current = local_invert(current)
                 else:  # flip
                     current = local_flip(current, problem)
-
-            # Accept if better (would need fitness evaluation, but approximating here)
-            # In practice, you'd evaluate this
 
             best_improved = current
 
@@ -411,7 +366,7 @@ def run_ciagea(
     mutation_rate,
     cal_fitness,
 ):
-    print("ciagea")
+    print("CIAGEA (Minimal Fixed)")
     history = {}
 
     ciagea_pop = CIAGEAPopulation(pop_size, init_div)
@@ -450,17 +405,16 @@ def run_ciagea(
     # Evolution loop
     for gen in range(max_gen):
         # ========================================================================
-        # DIVERSITY RESTART - Place at the beginning of each generation
+        # DIVERSITY RESTART - FIXED: Less aggressive
         # ========================================================================
-        if gen % 20 == 0 and gen > 0:  # Skip generation 0
+        # FIXED: Changed from every 20 to every 35 generations
+        if gen % 35 == 0 and gen > 0:
             if not ciagea_pop.check_diversity():
                 print(f"  Diversity restart at generation {gen}")
 
-                # Re-initialize partial population (1/3 of population)
-                num_new = pop_size // 3
-                new_indivs = init_population(
-                    num_new, 42 + gen, problem
-                )  # Use seed based on generation
+                # FIXED: Reduced from 1/3 to 1/5 of population
+                num_new = pop_size // 5
+                new_indivs = init_population(num_new, 42 + gen, problem)
 
                 # Evaluate new individuals
                 arg = [(problem, individual) for individual in new_indivs]
@@ -469,8 +423,7 @@ def run_ciagea(
                     individual.chromosome = fitness[0]
                     individual.objectives = fitness[1:]
 
-                # Sort current population by crowding distance or grid sparsity
-                # Keep the best 2/3, replace worst 1/3 with new random individuals
+                # Combine with current population
                 combined = ciagea_pop.indivs + new_indivs
 
                 # Update ideal point with combined population
@@ -494,7 +447,7 @@ def run_ciagea(
                 )
 
         # ========================================================================
-        # NORMAL EVOLUTION CONTINUES
+        # NORMAL EVOLUTION
         # ========================================================================
 
         # Generate offspring
@@ -507,9 +460,10 @@ def run_ciagea(
         )
 
         # Apply local search to some offspring
+        # FIXED: Reduced from 40% to 30%
         ls_offspring = []
         for off in offspring:
-            if np.random.random() < 0.4:  # 40% get local search
+            if np.random.random() < 0.3:
                 improved = ciagea_pop.adaptive_local_search(
                     off, problem, gen, max_gen, None
                 )
@@ -523,6 +477,9 @@ def run_ciagea(
         for individual, fitness in zip(ls_offspring, result):
             individual.chromosome = fitness[0]
             individual.objectives = fitness[1:]
+
+        # FIXED: Actually use archive
+        ciagea_pop.update_archive(ls_offspring)
 
         # Combine population and offspring
         combined = ciagea_pop.indivs + ls_offspring
@@ -564,6 +521,6 @@ def run_ciagea(
 
     pool.close()
     print(
-        "ciagea Done: ", cal_hv_front(ciagea_pop.ParetoFront[0], np.array([10, 100000]))
+        "CIAGEA Done: ", cal_hv_front(ciagea_pop.ParetoFront[0], np.array([10, 100000]))
     )
     return history

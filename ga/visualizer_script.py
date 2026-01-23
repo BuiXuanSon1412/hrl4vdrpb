@@ -7,8 +7,13 @@ from moo_algorithm.metric import cal_hv
 # --- Configuration (Synced with your files) ---
 RESULT_DIR = "./result"
 IMAGE_DIR = "./img"
-FILES = ["S042_N1000_R_R50.json"]
-ALGORITHMS = ["AGEA", "IAGEA"]
+FILES = [
+    "S046_N50_R_R50.json",
+    "S046_N50_RC_R50.json",
+]
+ALGORITHMS = ["NSGA_II", "PFG_MOEA", "AGEA", "CIAGEA"]
+# ALGORITHMS = ["CIAGEA"]
+
 NORMALIZED_REF_POINT = np.array([1.1, 1.1])
 
 

@@ -13,9 +13,11 @@ from utils import init_population, cal_fitness
 from config import ALGORITHMS
 
 
-algorithms = ["AGEA", "IAGEA", "CIAGEA"]
-# algorithms = ["AGEA"]
-run_files = ["S042_N1000_R_R50.json"]
+algorithms = ["NSGA_II", "PFG_MOEA", "AGEA", "CIAGEA"]
+run_files = [
+    "S046_N50_R_R50.json",
+    "S046_N50_RC_R50.json",
+]
 
 
 def run_algorithm_on_data(
@@ -105,7 +107,7 @@ def save_result(result: Dict[str, Any], output_path: Path):
 def main():
     # Configuration
     POP_SIZE = 100
-    MAX_GEN = 100
+    MAX_GEN = 200
     PROCESSING_NUMBER = 12
     SEED = 42
     BASE_DATA_DIR = "../data/generated/data"

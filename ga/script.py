@@ -10,14 +10,15 @@ from utils import init_population
 from config import ALGORITHMS
 from run import run_algorithm_on_data, get_data_files, save_result
 
-size_dirs = ["N10", "N20", "N50"]
-algorithms = ["NSGA_II", "NSGA_III", "MOEAD", "PFG_MOEA"]
+# thay đổi thành phần trong size_dirs để xác định bộ chạy
+size_dirs = ["N200"]
+algorithms = ["MOEAD", "NSGA_II", "NSGA_III", "PFG_MOEA", "AGEA", "CIAGEA"]
 
 
 def main():
     # Configuration
     POP_SIZE = 100
-    MAX_GEN = 100
+    MAX_GEN = 200
     PROCESSING_NUMBER = 12
     INITIAL_SEED = 42  # Renamed to clarify it's the starting point
     BASE_DATA_DIR = "../data/generated/data"
@@ -32,7 +33,7 @@ def main():
         return
 
     # Loop for multiple runs (1 to 5)
-    for run_count in range(4, NUM_RUNS):
+    for run_count in range(5, NUM_RUNS + 1):
         # Update seed for this specific run
         current_seed = INITIAL_SEED + (run_count - 1)
 
@@ -72,9 +73,9 @@ def main():
                     output_path.parent.mkdir(parents=True, exist_ok=True)
 
                     # Check if result already exists to avoid redundant work
-                    # if output_path.exists():
-                    #    print(f"  Skipping: {data_file.name} (already exists)")
-                    #    continue
+                    if output_path.exists():
+                        print(f"  Skipping: {data_file.name} (already exists)")
+                        continue
 
                     print(f"  Processing: {data_file.name}")
 
