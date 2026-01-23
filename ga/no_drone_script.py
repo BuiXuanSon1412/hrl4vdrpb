@@ -6,12 +6,12 @@ from pathlib import Path
 sys.path.append(os.path.dirname(os.path.abspath(__file__)))
 
 from problem import Problem
-from utils import init_population
-from config import ALGORITHMS
+from scene.no_drone import init_population
+from scene.no_drone import ALGORITHMS
 from run import run_algorithm_on_data, get_data_files, save_result
 
 # thay đổi thành phần trong size_dirs để xác định bộ chạy
-size_dirs = ["N50"]
+size_dirs = ["N100", "N200", "N400"]
 algorithms = ["MOEAD", "NSGA_II", "NSGA_III", "PFG_MOEA", "AGEA", "CIAGEA"]
 
 
@@ -22,7 +22,7 @@ def main():
     PROCESSING_NUMBER = 12
     INITIAL_SEED = 42  # Renamed to clarify it's the starting point
     BASE_DATA_DIR = "../data/generated/data"
-    BASE_RESULT_DIR = "./result"
+    BASE_RESULT_DIR = "./result/no_drone"
     NUM_RUNS = 5  # Number of times to run each instance
 
     # Get all data files
@@ -73,9 +73,9 @@ def main():
                     output_path.parent.mkdir(parents=True, exist_ok=True)
 
                     # Check if result already exists to avoid redundant work
-                    # if output_path.exists():
-                    #    print(f"  Skipping: {data_file.name} (already exists)")
-                    #    continue
+                    if output_path.exists():
+                        print(f"  Skipping: {data_file.name} (already exists)")
+                        continue
 
                     print(f"  Processing: {data_file.name}")
 
