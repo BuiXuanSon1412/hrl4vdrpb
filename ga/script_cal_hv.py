@@ -71,9 +71,9 @@ def cal_hv_one_dataset(result_dir, size_dir, instance_file, run_number=None):
 
 
 def main():
-    RESULT_DIR = "./result/drone/"
-    OUTPUT_CSV = "./result/metric/drone/hv_metric.csv"
-    size_dirs = ["N100", "N200", "N400"]
+    RESULT_DIR = "./result/raw/drone/"
+    OUTPUT_CSV = "./result/processed/drone/hv_metric.csv"
+    size_dirs = ["N100", "N200", "N400", "N1000"]
     distributions = ["R", "C", "RC"]
     instance_seeds = [42, 43, 44, 45, 46]
     run_numbers = [1, 2, 3, 4, 5]
