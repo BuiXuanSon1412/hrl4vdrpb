@@ -11,8 +11,8 @@ from config import ALGORITHMS
 from run import run_algorithm_on_data, get_data_files, save_result
 
 # thay đổi thành phần trong size_dirs để xác định bộ chạy
-size_dirs = ["N50"]
-algorithms = ["MOEAD", "NSGA_II", "NSGA_III", "PFG_MOEA", "AGEA", "CIAGEA"]
+size_dirs = ["N1000"]
+algorithms = ["NSGA_III", "NSGA_II", "MOEAD", "PFG_MOEA"]
 
 
 def main():
@@ -33,7 +33,7 @@ def main():
         return
 
     # Loop for multiple runs (1 to 5)
-    for run_count in range(1, NUM_RUNS + 1):
+    for run_count in range(2, 3):
         # Update seed for this specific run
         current_seed = INITIAL_SEED + (run_count - 1)
 
@@ -73,9 +73,9 @@ def main():
                     output_path.parent.mkdir(parents=True, exist_ok=True)
 
                     # Check if result already exists to avoid redundant work
-                    # if output_path.exists():
-                    #    print(f"  Skipping: {data_file.name} (already exists)")
-                    #    continue
+                    if output_path.exists():
+                        print(f"  Skipping: {data_file.name} (already exists)")
+                        continue
 
                     print(f"  Processing: {data_file.name}")
 
