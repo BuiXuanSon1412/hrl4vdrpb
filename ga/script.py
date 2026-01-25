@@ -11,8 +11,15 @@ from config import ALGORITHMS
 from run import run_algorithm_on_data, get_data_files, save_result
 
 # thay đổi thành phần trong size_dirs để xác định bộ chạy
-size_dirs = ["N1000"]
-algorithms = ["CIAGEA"]
+size_dirs = ["N100"]
+algorithms = ["MOEAD"]
+selected_files = [
+    "S044_N1000_R_R50.json",
+    "S042_N100_C_R50.json",
+    "S043_N100_C_R50.json",
+    "S044_N100_C_R50.json",
+    "S042_N100_RC_R50.json",
+]
 
 
 def main():
@@ -22,7 +29,7 @@ def main():
     PROCESSING_NUMBER = 8
     INITIAL_SEED = 42  # Renamed to clarify it's the starting point
     BASE_DATA_DIR = "../data/generated/data"
-    BASE_RESULT_DIR = "./result/div"
+    BASE_RESULT_DIR = "./result/raw/drone/"
     NUM_RUNS = 5  # Number of times to run each instance
 
     # Get all data files
@@ -33,7 +40,7 @@ def main():
         return
 
     # Loop for multiple runs (1 to 5)
-    for run_count in range(1, 2):
+    for run_count in range(4, 5):
         # Update seed for this specific run
         current_seed = INITIAL_SEED + (run_count - 1)
 
@@ -61,7 +68,7 @@ def main():
 
                 for data_file in files:
                     # Update output path structure: result/{count}/{algorithm}/N{nodes}/{file_name}.json
-                    if data_file.match("S042_*.json"):
+                    if data_file.name in selected_files:
                         output_path = (
                             Path(BASE_RESULT_DIR)
                             / str(run_count)  # Store in count folder (1, 2, 3, 4, 5)

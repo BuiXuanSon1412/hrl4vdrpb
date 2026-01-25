@@ -48,8 +48,10 @@ def find_nadir_point_igd(result_dir, size_dir, instance_file, algorithms):
 
     for algo in algorithms:
         json_path = result_path / algo / size_dir / instance_file
+
         if not json_path.exists():
             continue
+
         try:
             with open(json_path, "r", encoding="utf-8") as f:
                 data = json.load(f)
@@ -77,7 +79,7 @@ def cal_igd_one_dataset(result_dir, size_dir, instance_file, run_number=None):
     Calculate IGD for all algorithms on one dataset/instance.
 
     Args:
-        result_dir: Base result directory (e.g., "./result/drone")
+        result_dir: Base result directory (e.g., "./result/raw/drone")
         size_dir: Size directory (e.g., "N100")
         instance_file: Instance filename (e.g., "S042_N100_RC_R50.json")
         run_number: Optional run number (1-5)
