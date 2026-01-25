@@ -399,7 +399,7 @@ def run_ciagea(
     # Store initial Pareto front
     ciagea_pop.ParetoFront = [fronts[0]] if fronts else [[]]
     Pareto_store = [list(indi.objectives) for indi in ciagea_pop.ParetoFront[0]]
-    history[0] = [Pareto_store, ciagea_pop.div]
+    history[0] = Pareto_store
     print("Generation 0: Done")
 
     # Evolution loop
@@ -517,7 +517,7 @@ def run_ciagea(
 
         print(f"Generation {gen + 1}: Done")
         Pareto_store = [list(indi.objectives) for indi in ciagea_pop.ParetoFront[0]]
-        history[gen + 1] = [Pareto_store, ciagea_pop.div]
+        history[gen + 1] = Pareto_store
 
     pool.close()
     print(
